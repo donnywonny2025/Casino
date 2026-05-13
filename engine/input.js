@@ -3,15 +3,27 @@
 
 // ===== INPUT HANDLING =====
 function submit(val) {
-  let tokens = val.trim().split(/[\s,]+/);
-  tokens.reverse();
+  let tokens = val.trim().split(/[\s,]+/).filter(t => t.length);
+  let isBulk = tokens.length > 1; // Multi-number paste = bulk mode
+
+  if (isBulk) {
+    tokens.reverse(); // Board reads newest-left, so reverse for chronological
+    console.log(`[Input] Bulk priming ${tokens.length} spins — scoring & Gemini suppressed`);
+    // Reset W/L before priming so phantom results don't pollute
+    wins = 0; losses = 0; streak = 0;
+    outcomeLog = [];
+    signalHits = { DEALER:0, ZONE:0, FREQ:0, FLOW:0, HOT:0, ACCEL:0 };
+    signalTotal = { DEALER:0, ZONE:0, FREQ:0, FLOW:0, HOT:0, ACCEL:0 };
+    hist = []; // Clear history — fresh prime
+  }
+
   tokens.forEach(tok => {
     let n = parseNum(tok);
     if (n === null) return;
     let color = getC(n);
 
-    // Score against prediction
-    if (pred && pred.color !== 'pass' && color !== 'green') {
+    // Score against prediction — ONLY in live mode (single number entry)
+    if (!isBulk && pred && pred.color !== 'pass' && color !== 'green') {
       let won = pred.color === color;
       if (won) { wins++; streak = streak >= 0 ? streak+1 : 1; flash('win'); }
       else { losses++; streak = streak <= 0 ? streak-1 : -1; flash('loss'); }
@@ -30,16 +42,25 @@ function submit(val) {
       }
       if (bankroll > sessionHigh) sessionHigh = bankroll;
     }
-    if (color === 'green') flash('green');
+    if (!isBulk && color === 'green') flash('green');
 
     hist.unshift({ num:n, color, tof:0 });
     dealerChanged = false;
-    predict();
   });
+
+  // Run prediction once after all numbers are loaded
+  predict();
   render();
   updateBankrollUI();
-  if (typeof maybeCallGemini === 'function') maybeCallGemini();
-  speak();
+
+  // Gemini: only call in live mode, never during bulk prime
+  if (!isBulk && typeof maybeCallGemini === 'function') maybeCallGemini();
+  if (!isBulk) speak();
+
+  if (isBulk) {
+    console.log(`[Input] Prime complete — ${hist.length} spins loaded, engine ready`);
+    flash('win'); // Green flash to confirm
+  }
 }
 
 document.getElementById('inp').addEventListener('keydown', e => {
