@@ -24,18 +24,45 @@ function detectDealerShift() {
   return Math.abs(rSD - pSD) > 4 || Math.abs(rAvg - pAvg) > 6;
 }
 
-// ===== KELLY CRITERION BET SIZING =====
+// ===== KELLY CRITERION BET SIZING (bankroll-aware) =====
 function kellyBet(prob) {
-  let edge = prob * 2 - 1;
-  if (edge <= 0.02) return { size:0, label:'LEAN' };
-  let fraction = edge * 0.25;
-  let bet = Math.max(1, Math.min(5, Math.round(bankroll * fraction)));
-  if (bet > bankroll * 0.25) bet = Math.max(1, Math.floor(bankroll * 0.25));
-  if (streak <= -3) bet = Math.min(bet, 1);
-  if (streak <= -5) { return { size:0, label:'LEAN' }; }
-  if (bankroll < sessionHigh * 0.6) { return { size:0, label:'STOP' }; }
-  let label = bet >= 5 ? 'MAX' : bet >= 3 ? 'STRONG' : bet >= 2 ? 'BASE' : 'HALF';
-  return { size:bet, label };
+  let edge = prob * 2 - 1; // Edge over even-money bet
+  let health = startBankroll > 0 ? bankroll / startBankroll : 1;
+
+  // === SURVIVAL MODES ===
+  if (bankroll <= 0) return { size:0, label:'STOP', reason:'Bankroll depleted' };
+  if (health <= 0.25) return { size:0, label:'STOP', reason:'Below 25% — protect remaining funds' };
+  if (streak <= -5) return { size:0, label:'STOP', reason:'5+ loss streak — hard stop' };
+  if (edge <= 0.02) return { size:0, label:'LEAN', reason:'No edge detected' };
+
+  // === BANKROLL-PROPORTIONAL SIZING ===
+  let fraction = edge * 0.25; // Quarter-Kelly for safety
+  let rawBet = bankroll * fraction;
+
+  // Hard cap: never risk more than 15% of remaining bankroll
+  rawBet = Math.min(rawBet, bankroll * 0.15);
+
+  // === HEALTH MODIFIERS ===
+  if (health < 0.5) rawBet *= 0.5;        // Below 50%: halve sizing
+  else if (health < 0.75) rawBet *= 0.75;  // Below 75%: reduce 25%
+  else if (health > 1.3 && streak >= 2) rawBet *= 1.2; // Up 30%+ and winning: loosen slightly
+
+  // Cold streak dampening
+  if (streak <= -3) rawBet = Math.min(rawBet, 1);
+
+  // Round to nearest $0.50 increment, minimum $0.50
+  let bet = Math.max(0.5, Math.round(rawBet * 2) / 2);
+  // Never bet more than bankroll
+  bet = Math.min(bet, bankroll);
+
+  let label;
+  if (bet >= 5) label = 'MAX';
+  else if (bet >= 3) label = 'STRONG';
+  else if (bet >= 2) label = 'BASE';
+  else if (bet >= 1) label = 'HALF';
+  else label = 'LEAN';
+
+  return { size: bet, label };
 }
 
 // ===== BAYESIAN PREDICTION ENGINE =====

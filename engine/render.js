@@ -28,12 +28,9 @@ function render() {
   }
 
   // Targets
+  // Targets (informational only — color is the bet)
   let hTargets = document.getElementById('hTargets');
-  hTargets.innerHTML = p.targets.length ? 'TARGET: ' + p.targets.map(t => dn(t)).join(' · ') : '';
-  let hNT = document.getElementById('hNumberTarget');
-  let hNum = document.getElementById('hNum');
-  if (p.targets.length) { hNT.style.display = 'flex'; hNum.textContent = dn(p.targets[2]); }
-  else { hNT.style.display = 'none'; }
+  hTargets.innerHTML = p.targets.length ? 'SECTOR: ' + p.targets.map(t => dn(t)).join(' · ') : '';
 
   // Zero Probability
   let greens = hist.filter(h => h.color === 'green').length;

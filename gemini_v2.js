@@ -71,6 +71,11 @@ function buildPayload() {
       wins, losses, streak,
       pct: wins + losses > 0 ? Math.round((wins / (wins + losses)) * 100) : 0
     },
+    financials: {
+      bankroll: bankroll,
+      startBankroll: startBankroll,
+      healthPct: startBankroll > 0 ? Math.round((bankroll / startBankroll) * 100) : 100
+    },
     flightStats: flightStats,
     outcomes: (typeof outcomeLog !== 'undefined') ? outcomeLog.slice(-10) : [],
     // Signal performance
@@ -103,6 +108,7 @@ DATA:
 - Bayesian Posterior: ${p.posterior ? `Red ${p.posterior.red}% / Black ${p.posterior.black}%` : 'N/A'}
 - Entropy: ${p.entropy}% (0=patterns, 100=random)
 - Session Momentum: ${p.momentum.toUpperCase()}
+- Bankroll Health: $${payload.financials.bankroll.toFixed(2)} (${payload.financials.healthPct}% of starting stack)
 - Kelly Recommendation: $${p.bet.size} ${p.bet.label}
 - Engine Record: W${payload.accuracy.wins} L${payload.accuracy.losses} (${payload.accuracy.pct}% win rate)
 - Streak: ${payload.accuracy.streak > 0 ? '+' + payload.accuracy.streak + ' wins' : payload.accuracy.streak + ' losses'}

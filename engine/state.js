@@ -8,7 +8,9 @@ let hist = [];
 let wins = 0, losses = 0, streak = 0;
 let pred = null;
 let bankroll = 22.03;
+let startBankroll = 22.03;
 let sessionHigh = 22.03;
+let plLog = [];  // P&L history: [{spin, bet, result, delta, balance}]
 let signalHits = { DEALER:0, ZONE:0, FREQ:0, FLOW:0, HOT:0, ACCEL:0 };
 let signalTotal = { DEALER:0, ZONE:0, FREQ:0, FLOW:0, HOT:0, ACCEL:0 };
 let softReset = 0;
@@ -47,6 +49,17 @@ function getD(h, count) {
 }
 
 // ===== BANKROLL =====
+function setBankroll(amount) {
+  bankroll = amount;
+  startBankroll = amount;
+  sessionHigh = amount;
+  plLog = [];
+  wins = 0; losses = 0; streak = 0; outcomeLog = [];
+  saveState();
+  console.log(`[Bankroll] Set to $${amount.toFixed(2)}`);
+  updateBankrollUI();
+}
+
 function updateBankrollUI() {
   let el = document.getElementById('bankrollVal');
   if (el) el.textContent = '$' + bankroll.toFixed(2);
@@ -56,8 +69,8 @@ function updateBankrollUI() {
 function saveState() {
   try {
     localStorage.setItem('casino_state', JSON.stringify({
-      hist, wins, losses, streak, pred, outcomeLog, bankroll, sessionHigh,
-      signalHits, signalTotal
+      hist, wins, losses, streak, pred, outcomeLog, bankroll, startBankroll,
+      sessionHigh, signalHits, signalTotal, plLog
     }));
   } catch(e) {}
 }
@@ -68,7 +81,9 @@ function loadState() {
       hist = s.hist; wins = s.wins||0; losses = s.losses||0; streak = s.streak||0;
       outcomeLog = s.outcomeLog||[];
       bankroll = s.bankroll || 22.03;
+      startBankroll = s.startBankroll || bankroll;
       sessionHigh = s.sessionHigh || bankroll;
+      plLog = s.plLog || [];
       let defSig = { DEALER:0, ZONE:0, FREQ:0, FLOW:0, HOT:0, ACCEL:0 };
       signalHits = { ...defSig, ...(s.signalHits||{}) };
       signalTotal = { ...defSig, ...(s.signalTotal||{}) };

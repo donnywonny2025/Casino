@@ -25,8 +25,32 @@ function submit(val) {
     // Score against prediction — ONLY in live mode (single number entry)
     if (!isBulk && pred && pred.color !== 'pass' && color !== 'green') {
       let won = pred.color === color;
-      if (won) { wins++; streak = streak >= 0 ? streak+1 : 1; flash('win'); }
-      else { losses++; streak = streak <= 0 ? streak-1 : -1; flash('loss'); }
+      let betAmount = (pred.bet && pred.bet.size) || 0;
+      if (won) {
+        wins++; streak = streak >= 0 ? streak+1 : 1; flash('win');
+        bankroll += betAmount; // 1:1 payout on color bet
+      } else {
+        losses++; streak = streak <= 0 ? streak-1 : -1; flash('loss');
+        bankroll -= betAmount;
+      }
+      if (bankroll < 0) bankroll = 0; // Can't go negative
+      if (bankroll > sessionHigh) sessionHigh = bankroll;
+
+      // P&L log entry
+      if (betAmount > 0) {
+        plLog.push({
+          spin: hist.length + 1,
+          bet: betAmount,
+          label: pred.bet.label,
+          predicted: pred.color.toUpperCase(),
+          actual: color.toUpperCase(),
+          result: won ? 'WIN' : 'LOSS',
+          delta: won ? betAmount : -betAmount,
+          balance: bankroll
+        });
+        if (plLog.length > 200) plLog.shift();
+      }
+
       outcomeLog.push({ predicted:pred.color.toUpperCase(), actual:color.toUpperCase(), result:won?'WIN':'LOSS', tof:0 });
       if (outcomeLog.length > 50) outcomeLog.shift();
       // Track per-signal accuracy with recency decay
@@ -40,9 +64,17 @@ function submit(val) {
           }
         });
       }
-      if (bankroll > sessionHigh) sessionHigh = bankroll;
     }
-    if (!isBulk && color === 'green') flash('green');
+    // Green (0/00) still costs the bet if we were betting
+    if (!isBulk && color === 'green' && pred && pred.bet && pred.bet.size > 0 && pred.color !== 'pass') {
+      bankroll -= pred.bet.size;
+      if (bankroll < 0) bankroll = 0;
+      losses++; streak = streak <= 0 ? streak-1 : -1;
+      plLog.push({ spin: hist.length+1, bet: pred.bet.size, label: pred.bet.label, predicted: pred.color.toUpperCase(), actual: 'GREEN', result: 'LOSS', delta: -pred.bet.size, balance: bankroll });
+      flash('green');
+    } else if (!isBulk && color === 'green') {
+      flash('green');
+    }
 
     hist.unshift({ num:n, color, tof:0 });
     dealerChanged = false;
