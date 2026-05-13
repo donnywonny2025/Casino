@@ -98,16 +98,80 @@ function render() {
   document.getElementById('bRI').textContent = 'Red: '+rc;
   document.getElementById('bBI').textContent = 'Black: '+bc;
 
-  // Number Frequency Grid
-  let ngrid = document.getElementById('ngrid');
-  let allNums = [0,100,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36];
-  ngrid.innerHTML = allNums.map(n => {
-    let c = freq[n]||0;
+  // ===== WHEEL HEAT MAP (physical wheel order) =====
+  let wgrid = document.getElementById('wgrid');
+  let targetSet = new Set(p.targets || []);
+  let lastNum = hist.length ? hist[0].num : -1;
+  // Use full history for frequency, not just last 50
+  let allFreq = {};
+  hist.forEach(h => { allFreq[h.num] = (allFreq[h.num]||0)+1; });
+  let maxFreq = Math.max(1, ...Object.values(allFreq));
+
+  wgrid.innerHTML = WHEEL.map(n => {
+    let c = allFreq[n]||0;
+    let heat = c / maxFreq; // 0-1 normalized
     let col = getC(n);
-    let bg = col==='red'?'rgba(255,45,85,'+(0.05+c*0.08)+')':col==='green'?'rgba(52,199,89,'+(0.05+c*0.08)+')':'rgba(255,255,255,'+(0.02+c*0.04)+')';
-    let border = c>=3?'1px solid rgba(255,255,255,0.2)':'1px solid transparent';
-    return `<div class="nc" style="background:${bg};border:${border}"><span class="nn">${dn(n)}</span><span class="ct">${c||''}</span></div>`;
+    let bg, txtCol;
+    if (col === 'red') {
+      bg = `rgba(255,45,85,${0.06 + heat*0.5})`;
+      txtCol = `rgba(255,45,85,${0.5 + heat*0.5})`;
+    } else if (col === 'green') {
+      bg = `rgba(52,199,89,${0.06 + heat*0.5})`;
+      txtCol = `rgba(52,199,89,${0.5 + heat*0.5})`;
+    } else {
+      bg = `rgba(180,190,210,${0.03 + heat*0.25})`;
+      txtCol = `rgba(200,210,220,${0.4 + heat*0.6})`;
+    }
+    let cls = 'wc';
+    if (targetSet.has(n)) cls += ' wc-target';
+    if (n === lastNum) cls += ' wc-last';
+    return `<div class="${cls}" style="background:${bg}"><span class="nn" style="color:${txtCol}">${dn(n)}</span><span class="ct">${c||''}</span></div>`;
   }).join('');
+
+  // ===== TABLE HEAT MAP (standard betting layout) =====
+  let tgrid = document.getElementById('tgrid');
+  // Row 1: 0 spanning row 1, 00 spanning row 2 in column 1
+  // Numbers: 3-column layout, rows of (1,2,3), (4,5,6) ... (34,35,36)
+  let tableHTML = '';
+  // 0 cell
+  let z0c = allFreq[0]||0, z0h = z0c/maxFreq;
+  let z0cls = 'tc tc-zero' + (targetSet.has(0) ? ' tc-target' : '') + (lastNum===0 ? ' tc-last' : '');
+  tableHTML += `<div class="${z0cls}" style="background:rgba(52,199,89,${0.06+z0h*0.5});grid-row:1"><span class="nn" style="color:rgba(52,199,89,${0.5+z0h*0.5})">${dn(0)}</span><span class="ct">${z0c||''}</span></div>`;
+  // Row 1 numbers: 1, 2, 3
+  for (let n = 1; n <= 3; n++) {
+    let c = allFreq[n]||0, h = c/maxFreq, col = getC(n);
+    let bg = col==='red' ? `rgba(255,45,85,${0.06+h*0.5})` : `rgba(180,190,210,${0.03+h*0.25})`;
+    let tc = col==='red' ? `rgba(255,45,85,${0.5+h*0.5})` : `rgba(200,210,220,${0.4+h*0.6})`;
+    let cls = 'tc' + (targetSet.has(n) ? ' tc-target' : '') + (lastNum===n ? ' tc-last' : '');
+    tableHTML += `<div class="${cls}" style="background:${bg};grid-row:1"><span class="nn" style="color:${tc}">${n}</span><span class="ct">${c||''}</span></div>`;
+  }
+  // 00 cell
+  let z00c = allFreq[100]||0, z00h = z00c/maxFreq;
+  let z00cls = 'tc tc-zero' + (targetSet.has(100) ? ' tc-target' : '') + (lastNum===100 ? ' tc-last' : '');
+  tableHTML += `<div class="${z00cls}" style="background:rgba(52,199,89,${0.06+z00h*0.5});grid-row:2"><span class="nn" style="color:rgba(52,199,89,${0.5+z00h*0.5})">${dn(100)}</span><span class="ct">${z00c||''}</span></div>`;
+  // Row 2 numbers: 4, 5, 6
+  for (let n = 4; n <= 6; n++) {
+    let c = allFreq[n]||0, h = c/maxFreq, col = getC(n);
+    let bg = col==='red' ? `rgba(255,45,85,${0.06+h*0.5})` : `rgba(180,190,210,${0.03+h*0.25})`;
+    let tc = col==='red' ? `rgba(255,45,85,${0.5+h*0.5})` : `rgba(200,210,220,${0.4+h*0.6})`;
+    let cls = 'tc' + (targetSet.has(n) ? ' tc-target' : '') + (lastNum===n ? ' tc-last' : '');
+    tableHTML += `<div class="${cls}" style="background:${bg};grid-row:2"><span class="nn" style="color:${tc}">${n}</span><span class="ct">${c||''}</span></div>`;
+  }
+  // Rows 3-12: numbers 7-36 (no zero column)
+  for (let row = 3; row <= 12; row++) {
+    let base = (row - 1) * 3 + 1; // row3=7, row4=10, ...
+    // Empty zero column cell
+    tableHTML += `<div style="grid-row:${row}"></div>`;
+    for (let col = 0; col < 3; col++) {
+      let n = base + col;
+      let c = allFreq[n]||0, h = c/maxFreq, clr = getC(n);
+      let bg = clr==='red' ? `rgba(255,45,85,${0.06+h*0.5})` : `rgba(180,190,210,${0.03+h*0.25})`;
+      let tc = clr==='red' ? `rgba(255,45,85,${0.5+h*0.5})` : `rgba(200,210,220,${0.4+h*0.6})`;
+      let cls = 'tc' + (targetSet.has(n) ? ' tc-target' : '') + (lastNum===n ? ' tc-last' : '');
+      tableHTML += `<div class="${cls}" style="background:${bg};grid-row:${row}"><span class="nn" style="color:${tc}">${n}</span><span class="ct">${c||''}</span></div>`;
+    }
+  }
+  tgrid.innerHTML = tableHTML;
 
   // Session Timeline
   document.getElementById('tl').innerHTML = hist.slice(0,60).map(h => {
