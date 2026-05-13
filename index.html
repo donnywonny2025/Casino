@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edge Engine</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- LEFT: Data & Analytics -->
+  <div class="data">
+
+    <!-- Prediction Hero -->
+    <div class="hero">
+      <div class="hero-label" id="hLabel">Awaiting Data</div>
+      
+      <div style="display: flex; justify-content: center; align-items: center; gap: 20px;">
+        <div class="hero-pred h-pass" id="hPred">—</div>
+        
+        <!-- Exact Number Prediction -->
+        <div id="hNumberTarget" style="display: none; flex-direction: column; align-items: center; justify-content: center; width: 80px; height: 80px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5);">
+          <div style="font-size: 8px; color: #667; letter-spacing: 1px; margin-bottom: 2px;">TARGET</div>
+          <div id="hNum" style="font-size: 34px; font-weight: 900; line-height: 1; color: #fff;">—</div>
+        </div>
+      </div>
+
+      <div class="hero-sub" id="hSub"></div>
+      <div class="hero-targets" id="hTargets" style="font-size: 11px; margin-top: 6px; letter-spacing: 0.5px; opacity: 0.8; color: #ffeb3b;"></div>
+      
+      <!-- Advanced Math Layer -->
+      <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); text-align: left;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+          <div style="font-size: 9px; opacity: 0.5; letter-spacing: 1px;">ZERO PROBABILITY</div>
+          <div id="hZero" style="font-size: 14px; color: #34c759; font-weight: 700;">--%</div>
+        </div>
+        <div style="height: 4px; background: #151825; border-radius: 2px; overflow: hidden; margin-bottom: 12px;">
+           <div id="hZeroBar" style="height: 100%; width: 0%; background: #34c759; transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.3s;"></div>
+        </div>
+
+        <div>
+          <div style="font-size: 9px; opacity: 0.5; letter-spacing: 1px; margin-bottom: 4px;">HOTTEST POCKETS</div>
+          <div id="hHot" style="font-size: 14px; font-weight: 700; color: #fff; display: flex; gap: 4px;">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timing Telemetry Strip -->
+    <div class="timing-strip" id="timingStrip" style="display:none;">
+      <div class="timing-label">FLIGHT TELEMETRY <span style="float:right; font-size:8px;"><span onclick="undoFlightTime()" style="cursor:pointer; color:#ff2d55; margin-right:8px; opacity:0.6">↩ UNDO</span><span id="timingState" style="opacity:0.5">● IDLE</span></span></div>
+      <div class="timing-clock" id="timingClock" onclick="triggerTiming()" style="cursor:pointer; text-align:center; font-size:28px; font-weight:900; font-family:'Inter',sans-serif; color:#2a2d3a; padding:6px 0; user-select:none; transition:color 0.2s">TAP</div>
+      <div class="timing-bars" id="timingBars"></div>
+      <div class="timing-stats" id="timingStats">Press [SPACE] or click above on ball drop</div>
+    </div>
+
+    <!-- Gemini Analysis -->
+    <div class="sec">Gemini Intel <span id="geminiStatus"
+        style="float:right; font-size:9px; font-weight:normal; letter-spacing:0.5px; opacity:0.7"></span></div>
+    <div class="gemini-panel" id="geminiInsight"
+      style="padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; margin-bottom: 20px; font-size: 11px; line-height: 1.4; color: #889;">
+      Waiting for 10 spins...
+    </div>
+
+    <!-- Live Ledger -->
+    <div class="sec">Live Ledger</div>
+    <div class="stats-bar" style="margin-bottom: 20px; font-size: 14px;">
+      <span>BANKROLL <b class="y" id="bankrollVal" style="font-size: 16px;">$22.03</b></span>
+      <span style="opacity: 0.6; font-size: 10px;">( HALF:$1 | BASE:$2 | MAX:$5 )</span>
+    </div>
+
+    <!-- Win/Loss Stats -->
+    <div class="stats-bar">
+      <span>W <b class="g" id="sW">0</b></span>
+      <span>L <b class="r" id="sL">0</b></span>
+      <span>PCT <b class="y" id="sP">—</b></span>
+      <span>STREAK <b id="sK">—</b></span>
+      <span>SPINS <b id="sN">0</b></span>
+    </div>
+
+    <!-- Dealer Telemetry -->
+    <div class="dealer-row" id="dlr"></div>
+    <div class="d-alert" id="dA"></div>
+
+    <!-- Signal Indicators -->
+    <div class="sig-row" id="sigs"></div>
+
+    <!-- Number Frequency Grid -->
+    <div class="sec">Number Frequency</div>
+    <div class="ngrid" id="ngrid"></div>
+
+    <!-- Red/Black Balance -->
+    <div class="sec">Red / Black</div>
+    <div class="bal">
+      <div class="bal-r" id="balR" style="width:50%"></div>
+      <div class="bal-b" id="balB" style="width:50%"></div>
+    </div>
+    <div class="bal-info">
+      <span id="bRI">Red: 0</span>
+      <span id="bBI">Black: 0</span>
+    </div>
+    <!-- Session Timeline -->
+    <div class="sec">Session Timeline</div>
+    <div class="tl" id="tl"></div>
+  </div>
+
+  <!-- RIGHT: Input & Spin Log -->
+  <div class="rpanel">
+    <div class="inp-wrap">
+      <div class="inp-label">Enter Number <span id="chrono"
+          style="float:right; font-size:10px; color:#556; cursor:pointer;">[SPACE] clock off</span></div>
+      <input type="text" id="inp" placeholder="#" maxlength="5" autofocus>
+      <button class="sim-btn" onclick="sim()">▶ Simulate Spin</button>
+      <div style="display:flex; gap: 5px; margin-top: 5px;">
+        <button class="sim-btn" style="background: rgba(255,204,0,0.1); color: #ffcc00; margin-top: 0; flex: 1;"
+          onclick="forceDealerChange()">⟳ Dealer Change</button>
+        <button class="sim-btn" style="background: rgba(255,45,85,0.1); color: #ff2d55; margin-top: 0; flex: 1;"
+          onclick="undoLastSpin()">↩ Undo Last</button>
+      </div>
+      <button class="sim-btn" style="background: rgba(0, 122, 255, 0.1); color: #007aff; margin-top: 5px; width: 100%; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="startLiveFeed()">
+        <span style="display:inline-block; width:8px; height:8px; background:#007aff; border-radius:50%; box-shadow: 0 0 8px #007aff;"></span> CONNECT CASINO FEED
+      </button>
+      <div class="sim-res" id="simRes"></div>
+      <div class="inp-info">R:<b id="fR">0</b> · B:<b id="fB">0</b> · G:<b id="fG">0</b></div>
+    </div>
+    <div class="log-hdr">Spin Log <span style="color:#445">(click to delete)</span></div>
+    <div class="spin-log" id="spinLog"></div>
+  </div>
+
+  <div class="flash" id="flash"></div>
+
+  <!-- Video Feed Background -->
+  <video id="liveFeed" autoplay muted style="position:fixed; top:0; left:0; width:100vw; height:100vh; object-fit:cover; z-index:-1; opacity:0.25; display:none; pointer-events:none;"></video>
+
+  <script src="gemini_v2.js?v=58001"></script>
+  <!-- Engine v3.0 — Modular Architecture -->
+  <script src="engine/state.js?v=3"></script>
+  <script src="engine/signals.js?v=3"></script>
+  <script src="engine/predict.js?v=3"></script>
+  <script src="engine/render.js?v=3"></script>
+  <script src="engine/input.js?v=3"></script>
+  <script>
+    async function startLiveFeed() {
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: "always" },
+          audio: false
+        });
+        const videoObj = document.getElementById('liveFeed');
+        videoObj.srcObject = stream;
+        videoObj.style.display = 'block';
+      } catch(err) {
+        console.error("Error: " + err);
+      }
+    }
+  </script>
+</body>
+
+</html>

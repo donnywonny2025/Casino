@@ -1,0 +1,337 @@
+{
+  "hist": [
+    {
+      "num": 25,
+      "color": "red",
+      "tof": 0
+    },
+    {
+      "num": 17,
+      "color": "black",
+      "tof": 0
+    },
+    {
+      "num": 6,
+      "color": "black",
+      "tof": 0
+    },
+    {
+      "num": 21,
+      "color": "red",
+      "time": 1778675635603
+    },
+    {
+      "num": 17,
+      "color": "black",
+      "time": 1778675635600
+    },
+    {
+      "num": 16,
+      "color": "red",
+      "time": 1778675635598
+    },
+    {
+      "num": 7,
+      "color": "red",
+      "time": 1778675635596
+    },
+    {
+      "num": 31,
+      "color": "black",
+      "time": 1778675430632
+    },
+    {
+      "num": 19,
+      "color": "red",
+      "time": 1778675430629
+    },
+    {
+      "num": 19,
+      "color": "red",
+      "time": 1778675430627
+    },
+    {
+      "num": 32,
+      "color": "red",
+      "time": 1778675430625
+    },
+    {
+      "num": 25,
+      "color": "red",
+      "time": 1778675430623
+    },
+    {
+      "num": 21,
+      "color": "red",
+      "time": 1778675430620
+    },
+    {
+      "num": 30,
+      "color": "red",
+      "time": 1778675430618
+    },
+    {
+      "num": 30,
+      "color": "red",
+      "time": 1778675430616
+    },
+    {
+      "num": 9,
+      "color": "red",
+      "time": 1778675430614
+    },
+    {
+      "num": 34,
+      "color": "red",
+      "time": 1778675430612
+    },
+    {
+      "num": 5,
+      "color": "red",
+      "time": 1778675430609
+    },
+    {
+      "num": 23,
+      "color": "red",
+      "time": 1778675430607
+    },
+    {
+      "num": 20,
+      "color": "black",
+      "time": 1778675430605
+    },
+    {
+      "num": 13,
+      "color": "black",
+      "time": 1778675430603
+    },
+    {
+      "num": 23,
+      "color": "red",
+      "time": 1778675430601
+    },
+    {
+      "num": 4,
+      "color": "black",
+      "time": 1778675430598
+    },
+    {
+      "num": 0,
+      "color": "green",
+      "time": 1778675430596
+    },
+    {
+      "num": 17,
+      "color": "black",
+      "time": 1778675430595
+    },
+    {
+      "num": 32,
+      "color": "red",
+      "time": 1778675430592
+    },
+    {
+      "num": 28,
+      "color": "black",
+      "time": 1778675430590
+    },
+    {
+      "num": 15,
+      "color": "black",
+      "time": 1778675430588
+    },
+    {
+      "num": 32,
+      "color": "red",
+      "time": 1778675430587
+    },
+    {
+      "num": 19,
+      "color": "red",
+      "time": 1778675430585
+    },
+    {
+      "num": 21,
+      "color": "red",
+      "time": 1778675430583
+    },
+    {
+      "num": 4,
+      "color": "black",
+      "time": 1778675430581
+    },
+    {
+      "num": 100,
+      "color": "green",
+      "time": 1778675430579
+    },
+    {
+      "num": 34,
+      "color": "red",
+      "time": 1778675430578
+    },
+    {
+      "num": 32,
+      "color": "red",
+      "time": 1778675430576
+    },
+    {
+      "num": 21,
+      "color": "red",
+      "time": 1778675430573
+    },
+    {
+      "num": 31,
+      "color": "black",
+      "time": 1778675430571
+    },
+    {
+      "num": 33,
+      "color": "black",
+      "time": 1778675430569
+    },
+    {
+      "num": 27,
+      "color": "red",
+      "time": 1778675430568
+    },
+    {
+      "num": 23,
+      "color": "red",
+      "time": 1778675430566
+    },
+    {
+      "num": 36,
+      "color": "red",
+      "time": 1778675430565
+    },
+    {
+      "num": 31,
+      "color": "black",
+      "time": 1778675430563
+    },
+    {
+      "num": 33,
+      "color": "black",
+      "time": 1778675430562
+    },
+    {
+      "num": 23,
+      "color": "red",
+      "time": 1778675430560
+    },
+    {
+      "num": 1,
+      "color": "red",
+      "time": 1778675430559
+    },
+    {
+      "num": 3,
+      "color": "red",
+      "time": 1778675430557
+    },
+    {
+      "num": 15,
+      "color": "black",
+      "time": 1778675430556
+    },
+    {
+      "num": 1,
+      "color": "red",
+      "time": 1778675430554
+    },
+    {
+      "num": 4,
+      "color": "black",
+      "time": 1778675430553
+    },
+    {
+      "num": 25,
+      "color": "red",
+      "time": 1778675430552
+    },
+    {
+      "num": 28,
+      "color": "black",
+      "time": 1778675430550
+    },
+    {
+      "num": 0,
+      "color": "green",
+      "time": 1778675430549
+    },
+    {
+      "num": 34,
+      "color": "red",
+      "time": 1778675430547
+    },
+    {
+      "num": 24,
+      "color": "black",
+      "time": 1778675430546
+    },
+    {
+      "num": 6,
+      "color": "black",
+      "time": 1778675430544
+    },
+    {
+      "num": 24,
+      "color": "black",
+      "time": 1778675430542
+    },
+    {
+      "num": 1,
+      "color": "red",
+      "time": 1778675430538
+    }
+  ],
+  "wins": 0,
+  "losses": 1,
+  "streak": -1,
+  "pred": {
+    "color": "pass",
+    "conf": 0,
+    "reason": "High Variance (\u03c3 13.0)",
+    "signals": [
+      {
+        "vote": "pass",
+        "str": 0,
+        "label": "DEALER"
+      },
+      {
+        "vote": "pass",
+        "str": 0,
+        "label": "SECTOR"
+      },
+      {
+        "vote": "red",
+        "str": 0.6085806194501845,
+        "label": "FREQ"
+      },
+      {
+        "vote": "pass",
+        "str": 0,
+        "label": "FLOW"
+      }
+    ],
+    "dp": {
+      "velocity": 6,
+      "dir": "CW",
+      "con": "ERRATIC",
+      "readable": false,
+      "changed": false,
+      "sd": 13,
+      "drift": 5.3
+    },
+    "targets": []
+  },
+  "geminiInsight": {
+    "prediction": "HALF",
+    "confidence": 0,
+    "insight": "The engine just started with a miss and has 0% confidence, so let's protect our chips and ease into it.",
+    "reasoning": "",
+    "timestamp": 1778675716748,
+    "spinCount": 58
+  }
+}

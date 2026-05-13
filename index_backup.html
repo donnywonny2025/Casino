@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stealth Engine</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    body {
+      background: #0a0a0f;
+      color: #e0e0e0;
+      font-family: 'Inter', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      background: rgba(15, 15, 25, 0.95);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06)
+    }
+
+    .header h1 {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.4)
+    }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .stat-label {
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 11px;
+      text-transform: uppercase
+    }
+
+    .stat-val {
+      font-weight: 700
+    }
+
+    .stat-val.green {
+      color: #00e676
+    }
+
+    .stat-val.red-text {
+      color: #ff1744
+    }
+
+    .stat-val.gold {
+      color: #ffd740
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 20px
+    }
+
+    .prediction-zone {
+      text-align: center;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center
+    }
+
+    .pred-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: rgba(255, 255, 255, 0.3);
+      margin-bottom: 12px
+    }
+
+    .prediction {
+      font-size: 96px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      transition: all 0.15s ease
+    }
+
+    .prediction.red {
+      color: #ff1744;
+      text-shadow: 0 0 60px rgba(255, 23, 68, 0.4)
+    }
+
+    .prediction.black {
+      color: #e0e0e0;
+      text-shadow: 0 0 60px rgba(255, 255, 255, 0.15)
+    }
+
+    .prediction.waiting {
+      color: rgba(255, 255, 255, 0.15);
+      font-size: 48px
+    }
+
+    .confidence {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 8px
+    }
+
+    .bet-size {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      color: #ffd740;
+      margin-top: 4px;
+      font-weight: 700
+    }
+
+    .input-zone {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    #numInput {
+      width: 120px;
+      height: 64px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 32px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s
+    }
+
+    #numInput:focus {
+      border-color: rgba(255, 255, 255, 0.3)
+    }
+
+    #numInput::placeholder {
+      color: rgba(255, 255, 255, 0.15);
+      font-size: 16px
+    }
+
+    .submit-btn {
+      height: 64px;
+      padding: 0 28px;
+      background: linear-gradient(135deg, #1a1a2e, #2a2a4e);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      transition: all 0.15s
+    }
+
+    .submit-btn:hover {
+      background: linear-gradient(135deg, #2a2a4e, #3a3a6e);
+      border-color: rgba(255, 255, 255, 0.2)
+    }
+
+    .history-strip {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 800px;
+      padding: 0 20px
+    }
+
+    .history-chip {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      transition: all 0.2s
+    }
+
+    .history-chip.red-chip {
+      background: rgba(255, 23, 68, 0.2);
+      border: 1px solid rgba(255, 23, 68, 0.4);
+      color: #ff1744
+    }
+
+    .history-chip.black-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e0e0e0
+    }
+
+    .history-chip.green-chip {
+      background: rgba(0, 230, 118, 0.15);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+      color: #00e676
+    }
+
+    .history-chip.newest {
+      transform: scale(1.15);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.1)
+    }
+
+    .analysis {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.35);
+      text-align: center;
+      max-width: 600px;
+      line-height: 1.6
+    }
+
+    .result-flash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s
+    }
+
+    .result-flash.win {
+      background: radial-gradient(circle, rgba(0, 230, 118, 0.15), transparent 70%);
+      opacity: 1
+    }
+
+    .result-flash.loss {
+      background: radial-gradient(circle, rgba(255, 23, 68, 0.1), transparent 70%);
+      opacity: 1
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <h1>Stealth Engine</h1>
+    <div class="stats">
+      <div class="stat"><span class="stat-label">W</span><span class="stat-val green" id="wins">0</span></div>
+      <div class="stat"><span class="stat-label">L</span><span class="stat-val red-text" id="losses">0</span></div>
+      <div class="stat"><span class="stat-label">Pct</span><span class="stat-val gold" id="pct">--</span></div>
+      <div class="stat"><span class="stat-label">Streak</span><span class="stat-val" id="streak">--</span></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="prediction-zone">
+      <div class="pred-label">Next Bet</div>
+      <div class="prediction waiting" id="prediction">ENTER FIRST NUMBER</div>
+      <div class="confidence" id="confidence"></div>
+      <div class="bet-size" id="betSize"></div>
+    </div>
+
+    <div class="input-zone">
+      <input type="text" id="numInput" placeholder="#" maxlength="2" autofocus>
+      <button class="submit-btn" onclick="submitNumber()">LOG</button>
+    </div>
+
+    <div class="history-strip" id="historyStrip"></div>
+    <div class="analysis" id="analysis"></div>
+  </div>
+
+  <div class="result-flash" id="flash"></div>
+
+  <script>
+    // American Roulette color map
+    const RED_NUMS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
+    const BLACK_NUMS = new Set([2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35]);
+    const GREEN_NUMS = new Set([0, 100]); // 100 = 00
+
+    function getColor(n) {
+      if (RED_NUMS.has(n)) return 'red';
+      if (BLACK_NUMS.has(n)) return 'black';
+      return 'green';
+    }
+
+    let history = []; // {num, color} newest first
+    let wins = 0, losses = 0, currentStreak = 0, streakType = '';
+    let currentPrediction = null; // 'red' or 'black'
+
+    function parseInput(val) {
+      val = val.trim().toLowerCase();
+      if (val === '00') return 100;
+      const n = parseInt(val);
+      if (isNaN(n) || n < 0 || n > 36) return null;
+      return n;
+    }
+
+    function displayNum(n) {
+      return n === 100 ? '00' : String(n);
+    }
+
+    function submitNumber() {
+      const input = document.getElementById('numInput');
+      const rawText = input.value.trim();
+      if (!rawText) return;
+
+      const tokens = rawText.split(/[\s,]+/);
+      // Reverse because FanDuel boards display newest on the left.
+      // So if you paste "18 16 32", 18 is newest and must be processed last.
+      tokens.reverse();
+
+      for (const token of tokens) {
+        const val = parseInput(token);
+        if (val === null) continue;
+
+        const color = getColor(val);
+
+        // Score prediction
+        if (currentPrediction && color !== 'green') {
+          if (currentPrediction === color) {
+            wins++;
+            currentStreak = currentStreak >= 0 ? currentStreak + 1 : 1;
+            streakType = 'W';
+            flashResult('win');
+          } else {
+            losses++;
+            currentStreak = currentStreak <= 0 ? currentStreak - 1 : -1;
+            streakType = 'L';
+            flashResult('loss');
+          }
+        }
+
+        // Add to history
+        history.unshift({ num: val, color: color });
+
+        // Generate next prediction
+        const pred = predict();
+        currentPrediction = pred.color;
+
+        // Update UI
+        updateUI(pred);
+      }
+      
+      input.value = '';
+      input.focus();
+    }
+
+    function predict() {
+      if (history.length < 3) return { color: 'black', confidence: 50, reason: 'Need more spins for Delta calc.' };
+
+      // Calculate Physical Wheel Deltas
+      const WHEEL = [0, 28, 9, 26, 30, 11, 7, 20, 32, 17, 5, 22, 34, 15, 3, 24, 36, 13, 1, 100, 27, 10, 25, 29, 12, 8, 19, 31, 18, 6, 21, 33, 16, 4, 23, 35, 14, 2];
+      
+      let deltas = [];
+      for (let i = 0; i < history.length - 1; i++) {
+        let currIdx = WHEEL.indexOf(history[i].num);
+        let prevIdx = WHEEL.indexOf(history[i+1].num);
+        if (currIdx === -1 || prevIdx === -1) continue;
+        let diff = currIdx - prevIdx;
+        if (diff < -19) diff += 38;
+        if (diff > 19) diff -= 38;
+        deltas.push(diff);
+      }
+
+      if (deltas.length === 0) return { color: 'black', confidence: 50, reason: 'Waiting for delta.' };
+
+      // Average the last 3 moving deltas to find Dealer Signature Velocity
+      let recentDeltas = deltas.slice(0, 3);
+      let avgDelta = recentDeltas.reduce((a, b) => a + b, 0) / recentDeltas.length;
+      
+      // Project the next pocket
+      let lastIdx = WHEEL.indexOf(history[0].num);
+      let projectedIdx = Math.round(lastIdx + avgDelta);
+      
+      if (projectedIdx < 0) projectedIdx += 38;
+      if (projectedIdx >= 38) projectedIdx -= 38;
+      
+      let projectedNum = WHEEL[projectedIdx];
+      let projectedColor = getColor(projectedNum);
+
+      let conf = 65;
+      // If the delta is highly consistent (standard deviation is low)
+      let variance = recentDeltas.reduce((a, b) => a + Math.pow(b - avgDelta, 2), 0) / recentDeltas.length;
+      if (variance < 15) conf = 85; // Very tight grouping!
+      else if (variance < 40) conf = 75;
+      else conf = 60; // Scatter
+
+      let dir = avgDelta > 0 ? "CW" : "CCW";
+      let dispTarget = projectedNum === 100 ? '00' : projectedNum;
+      let reason = `Dealer Signature Avg: ${Math.round(Math.abs(avgDelta))} pockets ${dir}. Target Sector: [${dispTarget}].`;
+
+      return {
+        color: projectedColor,
+        confidence: conf,
+        reason: reason
+      };
+    }
+
+    function updateUI(pred) {
+      // Prediction
+      const predEl = document.getElementById('prediction');
+      predEl.textContent = pred.color.toUpperCase();
+      predEl.className = 'prediction ' + pred.color;
+
+      // Confidence
+      document.getElementById('confidence').textContent = `Confidence: ${pred.confidence}%`;
+
+      // Bet size
+      const betSize = pred.confidence >= 65 ? '$5' : pred.confidence >= 58 ? '$2' : '$1';
+      document.getElementById('betSize').textContent = `Bet: ${betSize}`;
+
+      // Stats
+      document.getElementById('wins').textContent = wins;
+      document.getElementById('losses').textContent = losses;
+      const total = wins + losses;
+      document.getElementById('pct').textContent = total > 0 ? Math.round((wins / total) * 100) + '%' : '--';
+      const streakEl = document.getElementById('streak');
+      if (currentStreak > 0) { streakEl.textContent = 'W' + currentStreak; streakEl.className = 'stat-val green'; }
+      else if (currentStreak < 0) { streakEl.textContent = 'L' + Math.abs(currentStreak); streakEl.className = 'stat-val red-text'; }
+      else { streakEl.textContent = '--'; streakEl.className = 'stat-val'; }
+
+      // History strip (last 30)
+      const strip = document.getElementById('historyStrip');
+      strip.innerHTML = '';
+      const show = history.slice(0, 30);
+      show.forEach((h, i) => {
+        const chip = document.createElement('div');
+        chip.className = 'history-chip ' + h.color + '-chip' + (i === 0 ? ' newest' : '');
+        chip.textContent = displayNum(h.num);
+        strip.appendChild(chip);
+      });
+
+      // Analysis
+      document.getElementById('analysis').textContent = pred.reason;
+    }
+
+    function flashResult(type) {
+      const flash = document.getElementById('flash');
+      flash.className = 'result-flash ' + type;
+      setTimeout(() => { flash.className = 'result-flash'; }, 400);
+    }
+
+    // Enter key to submit
+    document.getElementById('numInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitNumber();
+    });
+  </script>
+</body>
+
+</html>

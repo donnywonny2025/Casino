@@ -1,0 +1,165 @@
+---
+version: alpha
+name: Example Brand — Heritage
+description: >
+  A complete working example of a DESIGN.md file demonstrating all
+  supported token types and sections. Use this as a starting template
+  for your own projects.
+colors:
+  primary: "#1A1C1E"
+  secondary: "#6C7278"
+  tertiary: "#B8422E"
+  neutral: "#F7F5F2"
+  on-primary: "#FFFFFF"
+  on-tertiary: "#FFFFFF"
+  surface: "#FFFFFF"
+  error: "#BA1A1A"
+typography:
+  headline-display:
+    fontFamily: Public Sans
+    fontSize: 64px
+    fontWeight: 700
+    lineHeight: 1.05
+    letterSpacing: -0.03em
+  headline-lg:
+    fontFamily: Public Sans
+    fontSize: 48px
+    fontWeight: 600
+    lineHeight: 1.1
+    letterSpacing: -0.02em
+  headline-md:
+    fontFamily: Public Sans
+    fontSize: 32px
+    fontWeight: 600
+    lineHeight: 1.2
+    letterSpacing: -0.01em
+  body-lg:
+    fontFamily: Public Sans
+    fontSize: 20px
+    fontWeight: 400
+    lineHeight: 1.6
+  body-md:
+    fontFamily: Public Sans
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+  body-sm:
+    fontFamily: Public Sans
+    fontSize: 14px
+    fontWeight: 400
+    lineHeight: 1.5
+  label-lg:
+    fontFamily: Space Grotesk
+    fontSize: 16px
+    fontWeight: 500
+    lineHeight: 1
+    letterSpacing: 0.08em
+  label-md:
+    fontFamily: Space Grotesk
+    fontSize: 12px
+    fontWeight: 500
+    lineHeight: 1
+    letterSpacing: 0.1em
+  label-sm:
+    fontFamily: Space Grotesk
+    fontSize: 10px
+    fontWeight: 500
+    lineHeight: 1
+    letterSpacing: 0.12em
+rounded:
+  none: 0px
+  sm: 4px
+  md: 8px
+  lg: 12px
+  xl: 24px
+  full: 9999px
+spacing:
+  xs: 4px
+  sm: 8px
+  md: 16px
+  lg: 24px
+  xl: 32px
+  xxl: 64px
+  gutter: 24px
+  margin: 32px
+components:
+  button-primary:
+    backgroundColor: "{colors.tertiary}"
+    textColor: "{colors.on-tertiary}"
+    typography: "{typography.label-lg}"
+    rounded: "{rounded.sm}"
+    padding: 12px
+  button-primary-hover:
+    backgroundColor: "#9E3726"
+  button-secondary:
+    backgroundColor: "transparent"
+    textColor: "{colors.primary}"
+    rounded: "{rounded.sm}"
+    padding: 12px
+  input-field:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.primary}"
+    typography: "{typography.body-md}"
+    rounded: "{rounded.sm}"
+    padding: 12px
+  card:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.md}"
+    padding: 24px
+---
+
+# Heritage Design System
+
+## Overview
+
+Architectural Minimalism meets Journalistic Gravitas. The UI evokes a premium matte finish — a high-end broadsheet or contemporary gallery. Every design decision prioritizes clarity, permanence, and editorial sophistication.
+
+The target audience values substance over flash. The interface should feel like opening a well-designed book: clean, confident, and intentional.
+
+## Colors
+
+The palette is rooted in high-contrast neutrals and a single, evocative accent color.
+
+- **Primary (#1A1C1E):** A deep ink used for headlines and core text to provide maximum readability and a sense of permanence.
+- **Secondary (#6C7278):** A sophisticated slate used primarily for utilitarian elements like borders, captions, and metadata.
+- **Tertiary (#B8422E):** "Boston Clay" — a vibrant earthy red as the sole driver for interaction, used exclusively for primary actions and critical highlights.
+- **Neutral (#F7F5F2):** A warm limestone that serves as the foundation for all pages, providing a softer, more organic feel than pure white.
+
+## Typography
+
+The typography strategy leverages two distinct typefaces for narrative and technical roles.
+
+- **Headlines:** Set in Public Sans Semi-Bold to establish an institutional and trustworthy voice. Headlines use negative letter-spacing for density and impact.
+- **Body:** Public Sans Regular at 16px ensures contemporary professionalism and long-form readability.
+- **Labels:** Space Grotesk is used for all technical data, timestamps, and metadata. Its geometric construction evokes precision. Labels are strictly uppercase with generous letter spacing.
+
+## Layout
+
+The layout follows a **Fluid Grid** model for mobile devices and a **Fixed-Max-Width Grid** for desktop (max 1200px).
+
+A strict 8px spacing scale (with a 4px half-step for micro-adjustments) is used to maintain a consistent rhythm. Components are grouped using "containment" principles, where related items are housed in cards with generous internal padding (24px) to emphasize the soft, approachable nature of the brand.
+
+## Elevation & Depth
+
+Depth is achieved through **Tonal Layers** rather than heavy shadows. The background uses a warm off-white (`neutral`), while primary content sits on pure white cards. This creates a subtle sense of elevation without resorting to drop shadows. When shadows are absolutely necessary, they should be tight and desaturated.
+
+## Shapes
+
+The shape language is defined by **Architectural Sharpness**. All interactive elements, containers, and inputs utilize a minimal **4px corner radius**. This provides just enough softness to feel modern while maintaining a rigid, engineered aesthetic. Decorative elements may use larger radii when they serve a specific compositional purpose.
+
+## Components
+
+- **Primary Buttons**: Boston Clay background, white text, 4px radius. On hover, the background darkens to #9E3726.
+- **Secondary Buttons**: Transparent background with primary-colored text and a 1px border.
+- **Input Fields**: White background, primary text, 4px radius with a 1px secondary border.
+- **Cards**: White background, 8px radius, 24px internal padding, no drop shadow.
+
+## Do's and Don'ts
+
+- Do use Boston Clay only for the single most important action per screen
+- Do maintain WCAG AA contrast ratios (4.5:1 for normal text)
+- Do use Space Grotesk exclusively for labels and metadata, never for body copy
+- Don't mix rounded and sharp corners in the same view
+- Don't use more than two font weights on a single screen
+- Don't apply Boston Clay to backgrounds or large surfaces — it is reserved for interaction
+- Don't use pure black (#000000) for text; always use Primary (#1A1C1E)
