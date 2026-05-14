@@ -1,9 +1,12 @@
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 import json
 import os
+import subprocess
+import signal
 from datetime import datetime, timezone
 
 LOG_FILE = '.tmp/engine_log.jsonl'
+ocr_process = None  # Global ref to OCR poller subprocess
 
 class EdgeHandler(SimpleHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -14,6 +17,7 @@ class EdgeHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
+        global ocr_process
         if self.path == '/log':
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
@@ -132,12 +136,66 @@ class EdgeHandler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b'{"ok":true}')
 
+        elif self.path == '/api/ocr-start':
+            if ocr_process and ocr_process.poll() is None:
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(b'{"ok":true,"status":"already_running"}')
+            else:
+                try:
+                    ocr_process = subprocess.Popen(
+                        ['python3', 'ocr_poller.py'],
+                        cwd=os.path.dirname(os.path.abspath(__file__)) or '.',
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT
+                    )
+                    print(f"[OCR] Poller started (PID {ocr_process.pid})")
+                    self.send_response(200)
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(f'{{"ok":true,"pid":{ocr_process.pid}}}'.encode())
+                except Exception as e:
+                    print(f"[ERROR] OCR start failed: {e}")
+                    self.send_response(500)
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write(f'{{"error":"{e}"}}'.encode())
+
+        elif self.path == '/api/ocr-stop':
+            if ocr_process and ocr_process.poll() is None:
+                ocr_process.terminate()
+                try:
+                    ocr_process.wait(timeout=5)
+                except Exception:
+                    ocr_process.kill()
+                print(f"[OCR] Poller stopped")
+                ocr_process = None
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{"ok":true,"status":"stopped"}')
+
         else:
             self.send_response(404)
             self.end_headers()
 
     def do_GET(self):
+        global ocr_process
         # API endpoints (return JSON)
+        if self.path == '/api/ocr-status':
+            running = ocr_process is not None and ocr_process.poll() is None
+            pid = ocr_process.pid if running else None
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"running": running, "pid": pid}).encode())
+            return
+
         if self.path == '/api/ocr-latest':
             try:
                 with open('.tmp/ocr_latest.json') as f:

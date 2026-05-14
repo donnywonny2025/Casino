@@ -285,7 +285,7 @@
     const OCR_POLL_MS = 3000; // Check server every 3s
     const OCR_CYCLE = 10;     // Poller runs every 10s
 
-    function toggleOcr() {
+    async function toggleOcr() {
       ocrActive = !ocrActive;
       const btn = document.getElementById('ocrToggle');
       const dot = document.getElementById('ocrDot');
@@ -295,10 +295,25 @@
         btn.textContent = 'STOP';
         btn.style.color = '#ff2d55';
         btn.style.borderColor = 'rgba(255,45,85,0.3)';
-        dot.style.background = '#34c759';
-        dot.style.boxShadow = '0 0 6px #34c759';
-        label.style.color = '#34c759';
-        label.textContent = 'OCR ACTIVE';
+        dot.style.background = '#ffcc00';
+        dot.style.boxShadow = '0 0 6px #ffcc00';
+        label.style.color = '#ffcc00';
+        label.textContent = 'STARTING...';
+
+        // Launch the poller process on the server
+        try {
+          const resp = await fetch('/api/ocr-start', { method: 'POST' });
+          const data = await resp.json();
+          if (data.ok) {
+            dot.style.background = '#34c759';
+            dot.style.boxShadow = '0 0 6px #34c759';
+            label.style.color = '#34c759';
+            label.textContent = 'OCR ACTIVE' + (data.pid ? ' (PID ' + data.pid + ')' : '');
+          }
+        } catch(e) {
+          label.textContent = 'START FAILED';
+          label.style.color = '#ff2d55';
+        }
 
         // Check for bootstrap data first
         if (!ocrBootstrapped) {
@@ -320,6 +335,9 @@
         label.textContent = 'OCR OFF';
         document.getElementById('ocrTimer').textContent = '';
         document.getElementById('ocrProgress').style.width = '0%';
+
+        // Stop the poller on the server
+        fetch('/api/ocr-stop', { method: 'POST' }).catch(() => {});
 
         clearInterval(ocrPollInterval);
         clearInterval(ocrCountdownInterval);
