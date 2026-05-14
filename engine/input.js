@@ -77,6 +77,46 @@ function writeLog(num, color) {
   }).catch(() => {}); // Silent fail — never block the UI
 }
 
+// ===== LIVE PREDICTION STATE (AI co-pilot reads this) =====
+function writePrediction() {
+  if (!pred) return;
+
+  let last10 = hist.slice(0, 10).map(h => ({ num: dn(h.num), color: h.color }));
+  let last20 = hist.slice(0, 20);
+  let rc = last20.filter(h => h.color === 'red').length;
+  let bc = last20.filter(h => h.color === 'black').length;
+
+  let state = {
+    ts: new Date().toISOString(),
+    // NEXT SPIN PREDICTION
+    call: pred.color,
+    confidence: pred.conf,
+    bet: pred.bet || { label: 'WAIT', size: 0 },
+    // Signal votes
+    signals: pred.signals ? pred.signals.map(s => ({
+      name: s.label,
+      vote: s.vote,
+      strength: Math.round(s.str * 100) / 100
+    })) : [],
+    // Session state
+    spins: hist.length,
+    bankroll: Math.round(bankroll * 100) / 100,
+    record: { w: wins, l: losses, pct: (wins + losses) > 0 ? Math.round(wins / (wins + losses) * 100) : 0 },
+    streak: streak,
+    // Recent history (last 10)
+    recent: last10,
+    // Balance
+    redBlack: { red: rc, black: bc },
+    momentum: pred.momentum || 'neutral'
+  };
+
+  fetch('/prediction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(state)
+  }).catch(() => {});
+}
+
 // ===== INPUT HANDLING =====
 function submit(val) {
   let tokens = val.trim().split(/[\s,]+/).filter(t => t.length);
@@ -160,6 +200,7 @@ function submit(val) {
   predict();
   render();
   updateBankrollUI();
+  writePrediction(); // Push live state to server for AI co-pilot
 
   // Gemini: call in live mode normally, force-call on bulk prime for baseline analysis
   if (!isBulk && typeof maybeCallGemini === 'function') maybeCallGemini();

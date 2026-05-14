@@ -81,6 +81,21 @@ class EdgeHandler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b'{"ok":true}')
 
+        elif self.path == '/prediction':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                os.makedirs('.tmp', exist_ok=True)
+                with open('.tmp/prediction.json', 'w') as f:
+                    f.write(post_data.decode('utf-8'))
+            except Exception as e:
+                print(f"[ERROR] Prediction write failed: {e}")
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{"ok":true}')
+
         elif self.path == '/ocr-spin':
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
