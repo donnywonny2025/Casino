@@ -87,6 +87,41 @@ function predict() {
     if (s.label === 'DEALER' || s.label === 'ACCEL') s.reliability *= (1 + entropy*0.2);
   });
 
+  // ===== STREAK-AWARE WEIGHTING =====
+  // When FLOW has been right recently, trust momentum over mean-reversion
+  // When FREQ has been right recently, trust reversion over momentum
+  let flowSig = signals.find(s => s.label === 'FLOW');
+  let freqSig = signals.find(s => s.label === 'FREQ');
+  if (flowSig && freqSig && flowSig.vote !== 'pass' && freqSig.vote !== 'pass') {
+    let flowHits = signalHits['FLOW'] || 0, flowTotal = signalTotal['FLOW'] || 0;
+    let freqHits = signalHits['FREQ'] || 0, freqTotal = signalTotal['FREQ'] || 0;
+    let flowRate = flowTotal >= 5 ? flowHits / flowTotal : 0.5;
+    let freqRate = freqTotal >= 5 ? freqHits / freqTotal : 0.5;
+    
+    // If FLOW is winning and FREQ is losing, boost FLOW and dampen FREQ
+    if (flowRate > 0.55 && freqRate < 0.50) {
+      flowSig.str = Math.min(flowSig.str * 1.5, 0.9);
+      freqSig.str *= 0.4;
+    }
+    // If FREQ is winning and FLOW is losing, boost FREQ and dampen FLOW
+    else if (freqRate > 0.55 && flowRate < 0.50) {
+      freqSig.str = Math.min(freqSig.str * 1.5, 0.9);
+      flowSig.str *= 0.4;
+    }
+  }
+
+  // Also check recent color streak — 4+ same color boosts momentum signal
+  let recentColors = hist.slice(0, 6).filter(s => s.color !== 'green').map(s => s.color);
+  if (recentColors.length >= 4) {
+    let streakColor = recentColors[0];
+    let streakLen = 0;
+    for (let c of recentColors) { if (c === streakColor) streakLen++; else break; }
+    if (streakLen >= 4 && flowSig && flowSig.vote === streakColor) {
+      flowSig.str = Math.min(flowSig.str * 1.8, 0.95);
+      if (freqSig && freqSig.vote !== streakColor) freqSig.str *= 0.3;
+    }
+  }
+
   // Bayesian posterior updating
   let pRed = 18/38, pBlack = 18/38;
   let votingSignals = 0;
