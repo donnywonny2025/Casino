@@ -63,20 +63,20 @@ last_row = []
 spins_detected = 0
 
 def capture_and_crop():
-    """Screenshot FanDuel tab with minimal focus disruption."""
+    """Screenshot FanDuel tab in BACKGROUND — no focus steal via CDP session_id."""
     tmp_path = '.tmp/ocr_frame.png'
     abs_path = os.path.abspath(tmp_path)
     
-    # Use browser-harness — switch_tab is needed but we minimize the delay
+    # Background capture: attach to FanDuel target WITHOUT activating it
     script = f'''
-import time
-tabs = cdp("Target.getTargets", {{}})
-pages = [t for t in tabs.get("targetInfos", []) if t.get("type") == "page"]
-fd = [t for t in pages if "fanduel" in t.get("url","").lower() or "launcher.casino" in t.get("url","").lower()]
+import base64
+tabs = cdp("Target.getTargets")
+fd = [t for t in tabs["targetInfos"] if t.get("type") == "page" and ("fanduel" in t.get("url","").lower() or "launcher.casino" in t.get("url","").lower())]
 if fd:
-    switch_tab(fd[0]["targetId"])
-    time.sleep(0.1)
-    capture_screenshot("{abs_path}")
+    tid = fd[0]["targetId"]
+    sid = cdp("Target.attachToTarget", targetId=tid, flatten=True)["sessionId"]
+    r = cdp("Page.captureScreenshot", session_id=sid, format="png")
+    open("{abs_path}", "wb").write(base64.b64decode(r["data"]))
     print("OK")
 else:
     print("NO_TAB")
@@ -91,14 +91,11 @@ else:
             print(f"[OCR] Capture error: {result.stderr[:200]}")
         return None
     
-    # Find the actual file (browser-harness appends timestamp)
-    import glob
-    files = sorted(glob.glob('.tmp/ocr_frame*.png'), key=os.path.getmtime, reverse=True)
-    if not files:
+    if not os.path.exists(abs_path):
         return None
     
     # Open and crop
-    img = Image.open(files[0])
+    img = Image.open(abs_path)
     scale_x = img.size[0] / crop['videoW']
     scale_y = img.size[1] / crop['videoH']
     

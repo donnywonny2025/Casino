@@ -60,6 +60,7 @@ function writeLog(num, color) {
     confluence: confluence,
     bankroll: Math.round(bankroll * 100) / 100,
     wl: { w: wins, l: losses, pct: (wins + losses) > 0 ? Math.round(wins / (wins + losses) * 100) + '%' : '-' },
+    flightTime: hist[0] ? hist[0].flightTime || null : null,
     result: null // filled in after scoring
   };
   
@@ -194,7 +195,22 @@ function submit(val) {
       flash('green');
     }
 
-    hist.unshift({ num:n, color, tof:0 });
+    // Pair with pending flight time if available
+    let ft = null;
+    if (!isBulk && typeof pendingFlightTime !== 'undefined' && pendingFlightTime !== null) {
+      ft = pendingFlightTime;
+      pendingFlightTime = null;
+      console.log(`[Flight] Paired: ${dn(n)} with flight ${(ft/1000).toFixed(2)}s`);
+      // Update flight indicator to show pairing
+      let fc = document.getElementById('timingClock');
+      if (fc) { fc.textContent = '✓ PAIRED'; fc.style.color = '#34c759'; }
+      let fs = document.getElementById('timingState');
+      if (fs) { fs.textContent = '● READY'; fs.style.color = '#556'; }
+      setTimeout(() => {
+        if (fc) { fc.textContent = '⏱ TAP ON LAUNCH'; fc.style.color = '#2a2d3a'; }
+      }, 2000);
+    }
+    hist.unshift({ num:n, color, tof:0, flightTime: ft });
     dealerChanged = false;
   });
 
@@ -270,29 +286,61 @@ function flash(type) {
 }
 
 // ===== FLIGHT TIMING (SPACEBAR) =====
+let pendingFlightTime = null;
+let flightTickInterval = null;
+let flightExpireTimeout = null;
+
 function triggerTiming() {
   if (!timingActive) {
+    // === TAP 1: Ball launched ===
     flightStart = performance.now();
     timingActive = true;
-    document.getElementById('timingState').textContent = '● TIMING';
-    document.getElementById('timingState').style.color = '#ff2d55';
-    document.getElementById('timingClock').textContent = '...';
-    document.getElementById('timingClock').style.color = '#ff2d55';
+    pendingFlightTime = null;
+    document.getElementById('timingState').textContent = '🟢 BALL IN AIR';
+    document.getElementById('timingState').style.color = '#34c759';
+    document.getElementById('timingClock').style.color = '#34c759';
+    // Live ticking counter
+    if (flightTickInterval) clearInterval(flightTickInterval);
+    flightTickInterval = setInterval(() => {
+      let elapsed = (performance.now() - flightStart) / 1000;
+      document.getElementById('timingClock').textContent = elapsed.toFixed(1) + 's';
+    }, 100);
+    // Auto-expire after 30 seconds
+    if (flightExpireTimeout) clearTimeout(flightExpireTimeout);
+    flightExpireTimeout = setTimeout(() => {
+      if (timingActive) {
+        timingActive = false;
+        clearInterval(flightTickInterval);
+        document.getElementById('timingState').textContent = '⚠ EXPIRED';
+        document.getElementById('timingState').style.color = '#ff9500';
+        document.getElementById('timingClock').textContent = '⏱ TAP ON LAUNCH';
+        document.getElementById('timingClock').style.color = '#2a2d3a';
+        setTimeout(() => {
+          document.getElementById('timingState').textContent = '● READY';
+          document.getElementById('timingState').style.color = '#556';
+        }, 2000);
+      }
+    }, 30000);
   } else {
+    // === TAP 2: Ball dropped ===
+    clearInterval(flightTickInterval);
+    clearTimeout(flightExpireTimeout);
     let dur = Math.round(performance.now() - flightStart);
     flightTimes.push(dur);
     if (flightTimes.length > 20) flightTimes.shift();
     timingActive = false;
-    document.getElementById('timingState').textContent = '● IDLE';
-    document.getElementById('timingState').style.color = '#556';
+    pendingFlightTime = dur; // Buffer for next number entry
+    document.getElementById('timingState').textContent = '✓ RECORDED';
+    document.getElementById('timingState').style.color = '#34c759';
     document.getElementById('timingClock').textContent = (dur/1000).toFixed(2) + 's';
-    document.getElementById('timingClock').style.color = '#34c759';
+    document.getElementById('timingClock').style.color = '#ffcc00';
     renderTimingBars();
     document.getElementById('inp').focus();
   }
 }
 function undoFlightTime() {
   flightTimes.pop();
+  pendingFlightTime = null;
   renderTimingBars();
 }
 function renderTimingBars() {
@@ -306,26 +354,40 @@ function renderTimingBars() {
     let h = Math.max(6, Math.min(32, (t/avg)*16));
     return `<div class="timing-bar ${cls}" style="height:${h}px"><span class="tval">${(t/1000).toFixed(1)}</span></div>`;
   }).join('');
+  // Show dealer consistency assessment
+  let assessment = cv < 0.10 ? '🎯 VERY CONSISTENT' : cv < 0.15 ? '✓ CONSISTENT' : cv < 0.25 ? '⚠ MODERATE' : '✕ ERRATIC';
+  let assessColor = cv < 0.10 ? '#34c759' : cv < 0.15 ? '#34c759' : cv < 0.25 ? '#ffcc00' : '#ff2d55';
   document.getElementById('timingStats').innerHTML =
-    `AVG ${(avg/1000).toFixed(2)}s · σ${(sd/1000).toFixed(2)}s · CV ${cv.toFixed(2)} · ${flightTimes.length} throws`;
+    `AVG ${(avg/1000).toFixed(2)}s · σ${(sd/1000).toFixed(2)}s · CV ${cv.toFixed(2)} · <span style="color:${assessColor}">${assessment}</span> · ${flightTimes.length} throws`;
 }
 
+// Spacebar works EVERYWHERE — even when input is focused
 document.addEventListener('keydown', e => {
-  if (e.code === 'Space' && chronoEnabled && document.activeElement.id !== 'inp') {
-    e.preventDefault(); triggerTiming();
+  if (e.code === 'Space' && chronoEnabled) {
+    e.preventDefault(); // Prevent typing space in input
+    triggerTiming();
   }
   if (e.code === 'Escape' && timingActive) {
     timingActive = false;
+    clearInterval(flightTickInterval);
+    clearTimeout(flightExpireTimeout);
+    pendingFlightTime = null;
     document.getElementById('timingState').textContent = '● CANCELLED';
-    document.getElementById('timingClock').textContent = 'TAP';
+    document.getElementById('timingState').style.color = '#ff2d55';
+    document.getElementById('timingClock').textContent = '⏱ TAP ON LAUNCH';
     document.getElementById('timingClock').style.color = '#2a2d3a';
   }
 });
 
 document.getElementById('chrono').addEventListener('click', () => {
   chronoEnabled = !chronoEnabled;
-  document.getElementById('chrono').textContent = chronoEnabled ? '[SPACE] clock ON' : '[SPACE] clock off';
+  document.getElementById('chrono').textContent = chronoEnabled ? '[SPACE] clock ON ⏱' : '[SPACE] clock off';
   document.getElementById('timingStrip').style.display = chronoEnabled ? 'block' : 'none';
+  if (chronoEnabled) {
+    document.getElementById('timingClock').textContent = '⏱ TAP ON LAUNCH';
+    document.getElementById('timingState').textContent = '● READY';
+    document.getElementById('timingState').style.color = '#556';
+  }
 });
 
 // ===== VOICE SYNTHESIS (TTS) =====

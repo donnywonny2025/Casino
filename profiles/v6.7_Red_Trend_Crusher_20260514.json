@@ -1,0 +1,32 @@
+{
+  "name": "v6.7 Red Trend Crusher",
+  "notes": "FLOW at 0.8, FREQ nerfed to 0.4/1.2z. Killed it on red-dominant dealers. $4 → $37 peak. Best with slow, consistent dealers showing clear color trends.",
+  "savedAt": "2026-05-14T09:30:00Z",
+  "version": "6.7.1",
+  "spins": 63,
+  "record": { "w": 19, "l": 18 },
+  "signals": {
+    "FREQ": { "zThreshold": 1.2, "maxStrength": 0.4, "window": 20 },
+    "FLOW": { "minSpins": 12, "window": 20, "biasThreshold": 0.10, "multiplier": 2.5, "maxStrength": 0.8 },
+    "HOT": { "zThreshold": 1.8, "maxStrength": 0.5, "window": 15 },
+    "ACCEL": { "sdCap": 3, "minAvgA": 0.5, "maxStrength": 0.8 },
+    "DEALER": { "lookback": 12 },
+    "ZONE": { "sectorWidth": 5 }
+  },
+  "predict": {
+    "streakBoost": 1.8,
+    "streakFreqDampen": 0.3,
+    "flowWinBoost": 1.5,
+    "freqLoseDampen": 0.4,
+    "coldThreshold": 0.35,
+    "hotThreshold": 0.65,
+    "maxConf": 95,
+    "dealerShiftConf": 55
+  },
+  "kelly": {
+    "fraction": 0.25,
+    "coldStreakCap": 0.5,
+    "maxBetPct": 0.20,
+    "absoluteMax": 2.00
+  }
+}

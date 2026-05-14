@@ -18,7 +18,7 @@ let outcomeLog = [];
 let flightTimes = [];
 let flightStart = 0;
 let timingActive = false;
-let chronoEnabled = false;
+let chronoEnabled = true;
 let dealerChanged = false;
 
 // ===== HELPERS =====
@@ -70,7 +70,7 @@ function saveState() {
   try {
     localStorage.setItem('casino_state', JSON.stringify({
       hist, wins, losses, streak, pred, outcomeLog, bankroll, startBankroll,
-      sessionHigh, signalHits, signalTotal, plLog
+      sessionHigh, signalHits, signalTotal, plLog, flightTimes
     }));
   } catch(e) {}
 }
@@ -84,6 +84,7 @@ function loadState() {
       startBankroll = s.startBankroll || bankroll;
       sessionHigh = s.sessionHigh || bankroll;
       plLog = s.plLog || [];
+      flightTimes = s.flightTimes || [];
       let defSig = { DEALER:0, ZONE:0, FREQ:0, FLOW:0, HOT:0, ACCEL:0 };
       signalHits = { ...defSig, ...(s.signalHits||{}) };
       signalTotal = { ...defSig, ...(s.signalTotal||{}) };

@@ -68,11 +68,11 @@
     </div>
 
     <!-- Timing Telemetry Strip (hidden by default) -->
-    <div class="timing-strip" id="timingStrip" style="display:none;">
-      <div class="timing-label">FLIGHT TELEMETRY <span style="float:right; font-size:8px;"><span onclick="undoFlightTime()" style="cursor:pointer; color:#ff2d55; margin-right:8px; opacity:0.6">↩ UNDO</span><span id="timingState" style="opacity:0.5">● IDLE</span></span></div>
-      <div class="timing-clock" id="timingClock" onclick="triggerTiming()" style="cursor:pointer; text-align:center; font-size:28px; font-weight:900; font-family:'Inter',sans-serif; color:#2a2d3a; padding:6px 0; user-select:none; transition:color 0.2s">TAP</div>
+    <div class="timing-strip" id="timingStrip" style="display:block;">
+      <div class="timing-label">FLIGHT TELEMETRY <span style="float:right; font-size:8px;"><span onclick="undoFlightTime()" style="cursor:pointer; color:#ff2d55; margin-right:8px; opacity:0.6">↩ UNDO</span><span id="timingState" style="opacity:0.7">● READY</span></span></div>
+      <div class="timing-clock" id="timingClock" onclick="triggerTiming()" style="cursor:pointer; text-align:center; font-size:28px; font-weight:900; font-family:'Inter',sans-serif; color:#2a2d3a; padding:6px 0; user-select:none; transition:color 0.2s">⏱ TAP ON LAUNCH</div>
       <div class="timing-bars" id="timingBars"></div>
-      <div class="timing-stats" id="timingStats">Press [SPACE] or click above on ball drop</div>
+      <div class="timing-stats" id="timingStats">Hit [SPACE] when ball launches · Hit [SPACE] again when ball drops</div>
     </div>
 
     <!-- Session Stats (single compact row) -->
@@ -168,6 +168,14 @@
         <button class="sim-btn" style="background: rgba(255,45,85,0.1); color: #ff2d55; margin-top: 0; flex: 1;"
           onclick="undoLastSpin()">↩ Undo Last</button>
       </div>
+      <div style="display:flex; gap: 5px; margin-top: 5px;">
+        <button class="sim-btn" style="background: rgba(0,200,120,0.1); color: #00c878; margin-top: 0; flex: 1;"
+          onclick="promptSaveProfile()">💾 Save Profile</button>
+        <select id="profile-select" style="flex:1; height:22px; background:#0e1018; border:1px solid #1e2235; border-radius:4px; color:#8899aa; font-size:9px; font-family:'SF Mono',monospace; cursor:pointer;"
+          onchange="handleProfileLoad(this.value)">
+          <option value="">-- Load Profile --</option>
+        </select>
+      </div>
       <div class="sim-res" id="simRes"></div>
       <div class="inp-info">R:<b id="fR">0</b> · B:<b id="fB">0</b> · G:<b id="fG">0</b></div>
     </div>
@@ -179,11 +187,32 @@
 
   <script src="gemini_v2.js?v=7"></script>
   <!-- Engine v6.0 — Bayesian Mean-Reversion -->
-  <script src="engine/state.js?v=7"></script>
-  <script src="engine/signals.js?v=7"></script>
-  <script src="engine/predict.js?v=7"></script>
-  <script src="engine/render.js?v=7"></script>
-  <script src="engine/input.js?v=7"></script>
+  <script src="engine/state.js?v=8"></script>
+  <script src="engine/signals.js?v=8"></script>
+  <script src="engine/predict.js?v=8"></script>
+  <script src="engine/profiles.js?v=8"></script>
+  <script src="engine/render.js?v=8"></script>
+  <script src="engine/input.js?v=8"></script>
+  <script>
+    // Profile save/load helpers
+    function promptSaveProfile() {
+      let name = prompt('Profile name (e.g. "Red Trend Crusher"):');
+      if (!name) return;
+      let notes = prompt('Notes (optional — describe the table/dealer):') || '';
+      saveProfile(name, notes);
+      document.getElementById('simRes').textContent = `✅ Profile "${name}" saved`;
+    }
+    function handleProfileLoad(filename) {
+      if (!filename) return;
+      loadProfile(filename).then(p => {
+        document.getElementById('simRes').textContent = `📂 Loaded "${p.name}" — ${p.record?.w}W-${p.record?.l}L`;
+        console.log('[Profile] Full config:', p);
+        // TODO: Auto-apply signal weights from profile
+      });
+    }
+    // Load profile list on startup
+    setTimeout(() => loadProfileList(), 1000);
+  </script>
   <script>
     let feedStream = null;
     let feedAttempted = false;
@@ -360,6 +389,16 @@
         const resp = await fetch('/api/ocr-bootstrap');
         const data = await resp.json();
         if (data.numbers && data.numbers.length > 0) {
+          // Skip bootstrap if localStorage already has more data (preserves history)
+          if (hist.length >= data.numbers.length) {
+            ocrBootstrapped = true;
+            console.log(`[OCR] Bootstrap skipped — localStorage has ${hist.length} spins vs ${data.numbers.length} from OCR`);
+            const label = document.getElementById('ocrLabel');
+            label.textContent = `RESTORED: ${hist.length} spins from memory`;
+            label.style.color = '#34c759';
+            return;
+          }
+
           ocrBootstrapped = true;
           const label = document.getElementById('ocrLabel');
           label.textContent = 'BOOTSTRAP: ' + data.numbers.length + ' spins';

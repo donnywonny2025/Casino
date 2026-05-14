@@ -1,12 +1,15 @@
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 import json
 import os
+import glob
 import subprocess
 import signal
 from datetime import datetime, timezone
+from urllib.parse import urlparse, parse_qs
 
 LOG_FILE = '.tmp/engine_log.jsonl'
 LEDGER_FILE = '.tmp/prediction_ledger.jsonl'  # Permanent — never cleared
+PROFILES_DIR = 'profiles'
 ocr_process = None  # Global ref to OCR poller subprocess
 
 class EdgeHandler(SimpleHTTPRequestHandler):
@@ -199,6 +202,30 @@ class EdgeHandler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b'{"ok":true,"status":"stopped"}')
 
+        elif self.path == '/save-profile':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                name = data.get('name', 'unnamed').replace(' ', '_').replace('/', '_')[:50]
+                os.makedirs(PROFILES_DIR, exist_ok=True)
+                filename = f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                filepath = os.path.join(PROFILES_DIR, filename)
+                with open(filepath, 'w') as f:
+                    json.dump(data, f, indent=2)
+                print(f"[PROFILE] Saved: {filename}")
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'ok': True, 'file': filename}).encode())
+            except Exception as e:
+                print(f"[ERROR] Profile save failed: {e}")
+                self.send_response(500)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': str(e)}).encode())
+
         else:
             self.send_response(404)
             self.end_headers()
@@ -248,6 +275,54 @@ class EdgeHandler(SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 self.wfile.write(b'{"numbers":[]}')
+            return
+
+        if self.path == '/list-profiles':
+            try:
+                os.makedirs(PROFILES_DIR, exist_ok=True)
+                profiles = []
+                for f in sorted(glob.glob(os.path.join(PROFILES_DIR, '*.json')), reverse=True):
+                    with open(f) as fh:
+                        p = json.load(fh)
+                        profiles.append({
+                            'file': os.path.basename(f),
+                            'name': p.get('name', 'unnamed'),
+                            'savedAt': p.get('savedAt', ''),
+                            'record': p.get('record', {}),
+                            'notes': p.get('notes', ''),
+                            'spins': p.get('spins', 0)
+                        })
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(profiles).encode())
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': str(e)}).encode())
+            return
+
+        if self.path.startswith('/load-profile'):
+            try:
+                qs = parse_qs(urlparse(self.path).query)
+                filename = qs.get('file', [''])[0]
+                filepath = os.path.join(PROFILES_DIR, filename)
+                if not os.path.exists(filepath):
+                    raise FileNotFoundError(f'Profile not found: {filename}')
+                with open(filepath) as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(data.encode())
+            except Exception as e:
+                self.send_response(404)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': str(e)}).encode())
             return
 
         # Serve calibration page

@@ -46,9 +46,9 @@ function render() {
   // Confidence + bet sizing display
   let hSub = document.getElementById('hSub');
   let confClass = p.conf >= 70 ? 'hc-hi' : p.conf >= 55 ? 'hc-md' : 'hc-lo';
-  if (hist.length < 20) {
-    let pct = Math.round((hist.length / 20) * 100);
-    hSub.innerHTML = `<span class="hero-conf hc-lo">${hist.length}/20</span><span class="hero-bet" style="color:#ffcc00">PRIMING ${pct}%</span>`;
+  if (hist.length < 10) {
+    let pct = Math.round((hist.length / 10) * 100);
+    hSub.innerHTML = `<span class="hero-conf hc-lo">${hist.length}/10</span><span class="hero-bet" style="color:#ffcc00">PRIMING ${pct}%</span>`;
   } else if (p.color !== 'pass') {
     let betStr = p.bet ? `$${p.bet.size.toFixed(2)} ${p.bet.label}` : '';
     let postStr = p.posterior ? ` <span style="font-size:9px;opacity:0.5">(${p.posterior.red}R/${p.posterior.black}B)</span>` : '';
