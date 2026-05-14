@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Edge Engine</title>
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 
 <body>
@@ -199,10 +199,54 @@
       document.getElementById('feedStatus').style.color = '#556';
     }
 
-    // Auto-trigger feed on first input click — no buttons needed
+    // Auto-trigger feed on first input click
+    // Drag-to-pan and scroll-to-zoom on feed viewport
     document.addEventListener('DOMContentLoaded', () => {
       const inp = document.getElementById('inp');
       inp.addEventListener('focus', () => startLiveFeed(), { once: false });
+
+      const saved = JSON.parse(localStorage.getItem('feedCrop') || 'null');
+      let feedX = saved ? saved.x : -73;
+      let feedY = saved ? saved.y : -20;
+      let feedZ = saved ? saved.z : 2.5;
+
+      const vp = document.getElementById('feedViewport');
+      const vid = document.getElementById('statsFeed');
+
+      function applyFeedTransform() {
+        vid.style.transform = 'translate(' + feedX + '%, ' + feedY + '%) scale(' + feedZ + ')';
+        localStorage.setItem('feedCrop', JSON.stringify({x: feedX, y: feedY, z: feedZ}));
+      }
+      applyFeedTransform();
+
+      // Drag to pan — listen on viewport (covers video + placeholder)
+      let dragging = false, startX, startY, origX, origY;
+      vp.addEventListener('mousedown', (e) => {
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        origX = feedX; origY = feedY;
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        feedX = origX + (e.clientX - startX) / (feedZ * 1.5);
+        feedY = origY + (e.clientY - startY) / (feedZ * 1.5);
+        applyFeedTransform();
+      });
+      document.addEventListener('mouseup', () => { dragging = false; });
+
+      // Scroll to zoom
+      vp.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        feedZ = Math.max(1, Math.min(8, feedZ + (e.deltaY > 0 ? -0.25 : 0.25)));
+        applyFeedTransform();
+      }, { passive: false });
+
+      // Double-click to reset
+      vp.addEventListener('dblclick', () => {
+        feedX = -73; feedY = -20; feedZ = 2.5;
+        applyFeedTransform();
+      });
     });
   </script>
 
