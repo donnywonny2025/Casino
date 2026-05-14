@@ -1,7 +1,7 @@
 # Edge Engine — Roulette Co-Pilot System
 
-> **Version:** 6.0 (Bayesian Mean-Reversion + Gemini Analyst)  
-> **Status:** Backtested & Validated  
+> **Version:** 6.3 (Live Feed + OCR Auto-Reader)  
+> **Status:** Backtested & Validated | OCR Pipeline Live  
 > **Game:** FanDuel Live Dealer American Roulette  
 > **Bankroll:** $10 | **Bet Range:** $0.50 – $2.00
 
@@ -16,9 +16,22 @@ This section is the living playbook. Update it as the system evolves.
 1. **Start the server:** `python3 server.py` from the CASINO directory
 2. **Open the dashboard:** Navigate to `http://localhost:8888` in Chrome
 3. **Open FanDuel:** Get to a Live Dealer American Roulette table
-4. **Screenshot the scoreboard** — the grid of recent results
-5. **Prime the engine:** Read the numbers from the scoreboard (newest first, left to right, top to bottom — exactly how the casino displays them) and paste them into the input field as a space-separated string. Hit Enter.
-6. **Start playing:** As each spin lands, type the number into the input field. The engine will show you what to bet on the NEXT spin.
+4. **Connect live feed:** Click the input field — browser prompts to share the FanDuel tab. The stats panel appears in the sidebar.
+5. **Adjust feed crop:** Drag the feed to pan, use +/- buttons to zoom, until the stats grid fills the viewport. Position saves automatically.
+6. **Start the OCR poller (optional):** `python3 ocr_poller.py` — auto-reads spin numbers every 10 seconds
+7. **Or enter manually:** As each spin lands, type the number into the input field. The engine shows what to bet on the NEXT spin.
+
+### OCR Auto-Reader (v6.3)
+
+The OCR poller eliminates manual data entry entirely:
+
+1. **Calibrate once:** Visit `http://localhost:8888/calibrate`, share the FanDuel tab, drag the green box over the stats panel, click Save.
+2. **Start poller:** `python3 ocr_poller.py`
+3. **Bootstrap:** First run reads the entire LAST 500 grid (~100+ spins) and loads full table history into the engine
+4. **Poll mode:** Every 10 seconds, reads the top row, diffs against last known state, detects new spins
+5. **Auto-feeds:** New spins are POSTed to the engine automatically
+
+**Cost:** Gemini 2.5 Flash at ~$0.02/hour. Spin timer is 20 seconds, so 10-second polling catches every spin.
 
 ### Reading the Dashboard
 
@@ -155,51 +168,45 @@ Tested against 140 real spins from the same FanDuel table, primed with 168 histo
 ┌─────────────────────────────────────────────────────┐
 │                   LIVE ROULETTE TABLE                │
 │              (FanDuel Live Dealer Feed)              │
-└──────────────────────┬──────────────────────────────┘
-                       │ User watches stream,
-                       │ enters spin results
-                       ▼
+└──────────┬──────────────────────────┬───────────────┘
+           │ getDisplayMedia          │ browser-harness
+           │ (live sidebar feed)      │ (screenshot → crop)
+           ▼                         ▼
 ┌─────────────────────────────────────────────────────┐
 │              LAYER 1: THE APP (Browser)              │
 │                 http://localhost:8888                 │
 │                                                      │
-│  • User types number → engine processes instantly    │
+│  • Live stats feed in sidebar (drag to pan/zoom)     │
+│  • Manual or OCR-driven number entry                 │
 │  • Bayesian prediction from 6 signals + entropy      │
 │  • Visual dashboard: heatmaps, wheel, bias bars     │
-│  • Gemini Flash runs background analysis every 10    │
-│  • Writes to .tmp/engine_log.jsonl on every spin     │
+│  • Gemini Flash background analysis every 10 spins   │
 └──────────┬──────────────────────────┬───────────────┘
-           │ POST /log               │ Log file
-           ▼                         ▼
-┌──────────────────┐   ┌──────────────────────────────┐
-│  server.py :8888 │   │  .tmp/engine_log.jsonl       │
-│  Python HTTP     │   │  One JSON line per spin:     │
-│  Serves files +  │   │  {spin, num, color, pred,    │
-│  receives logs   │   │   conf, bet, signals,        │
-│                  │   │   confluence, bankroll}       │
-└──────────────────┘   └──────────────┬───────────────┘
-                                      │ AI reads via:
-                                      │ tail -5 .tmp/engine_log.jsonl
-                                      ▼
+           │ POST /log               │
+           ▼                         │
+┌──────────────────┐                 │
+│  server.py :8888 │                 │
+│  Python HTTP     │                 │
+│  Endpoints:      │                 │
+│  /log            │                 │
+│  /ocr-spin       │◄── ocr_poller.py (every 10s)
+│  /ocr-bootstrap  │    └─ screenshot → crop → Gemini
+│  /api/set-crop   │       └─ diff top row → new spin
+│  /calibrate      │
+└──────────────────┘
+           │
+           ▼
 ┌─────────────────────────────────────────────────────┐
-│             LAYER 2: THE AI (Co-Pilot)               │
+│              OCR PIPELINE (v6.3)                     │
 │                                                      │
-│  • Reads log file (sub-second, no screenshots)       │
-│  • Sees everything the engine sees, instantly         │
-│  • Provides contextual analysis on demand            │
-│  • Can run backtests against historical data          │
-│  • Cannot be replaced by the engine alone             │
-└─────────────────────────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────┐
-│            LAYER 3: THE HUMAN (Decision)             │
-│                                                      │
-│  • Provides live data feed (spin numbers)            │
-│  • Reads engine prediction + AI + Gemini analysis    │
-│  • Makes final bet decision                          │
-│  • Places chips on FanDuel                           │
-│  • Catches nuance neither engine nor AI sees         │
+│  ocr_poller.py (background process)                  │
+│  1. browser-harness screenshots FanDuel tab          │
+│  2. Crops to calibrated coordinates (ocr_crop.json)  │
+│  3. Sends cropped image to Gemini 2.5 Flash          │
+│  4. Bootstrap: reads ALL rows on first run            │
+│  5. Poll: reads top row, diffs, detects new spins    │
+│  6. POSTs new numbers to /ocr-spin endpoint          │
+│  7. History saved to .tmp/ocr_history.json            │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -209,14 +216,33 @@ Tested against 140 real spins from the same FanDuel table, primed with 168 histo
 
 ### Prerequisites
 - Python 3.x
-- A browser (Chrome recommended)
-- Gemini API key (for background analysis — optional but recommended)
+- Pillow (`pip3 install Pillow`)
+- browser-harness (for OCR screenshots)
+- Chrome with CDP on port 9222
+- Gemini API key in `.env` file
 
 ### Quick Start
 ```bash
 cd /Volumes/WORK\ 2TB/WORK\ 2026/CASINO
 python3 server.py
 # Open http://localhost:8888 in your browser
+```
+
+### OCR Poller
+```bash
+# First time: calibrate the crop
+# Visit http://localhost:8888/calibrate
+# Drag the green box over the stats panel, click Save
+
+# Then run the poller
+python3 ocr_poller.py
+# Bootstraps full history, then polls every 10s
+```
+
+### Environment Setup
+```bash
+# .env file (gitignored — never committed)
+GEMINI_API_KEY=your_key_here
 ```
 
 ### Gemini API Setup
@@ -422,10 +448,13 @@ AI reads via: `tail -n 5 .tmp/engine_log.jsonl`
 
 ```
 CASINO/
-├── index.html              # Main dashboard UI
-├── style.css               # Layout-locked CSS (v6)
-├── server.py               # Python HTTP server (:8888)
+├── index.html              # Main dashboard UI (live feed + engine)
+├── style.css               # Layout-locked CSS (v6.3)
+├── server.py               # Python HTTP server (:8888) + OCR endpoints
+├── calibrate.html          # Feed crop calibration tool
+├── ocr_poller.py           # OCR auto-reader (Gemini Flash, 10s polling)
 ├── gemini_v2.js            # Gemini Flash integration (background analyst)
+├── .env                    # API keys (gitignored)
 ├── README.md               # This file
 ├── ROULETTE_MASTER_PLAN.md  # Strategy research + historical backtest data
 ├── ROULETTE_LEDGER.md       # Session P&L tracking
@@ -441,6 +470,10 @@ CASINO/
 │
 ├── .tmp/                    # Runtime files (gitignored)
 │   ├── engine_log.jsonl     # Live spin log (AI reads this)
+│   ├── ocr_crop.json        # Calibrated crop coordinates
+│   ├── ocr_history.json     # Full table history from OCR
+│   ├── ocr_latest.json      # Most recent OCR-detected spin
+│   ├── ocr_bootstrap.json   # Bootstrap data dump
 │   ├── run_backtest_v2.py   # Backtest runner (browser-harness)
 │   ├── run_backtest_diag.py # Diagnostic backtest (signal-level analysis)
 │   └── sim.js               # CLI simulation runner
@@ -477,10 +510,17 @@ CASINO/
 - [x] Layout-locked dashboard UI (zero shift)
 - [x] Kelly Criterion bet sizing
 
-### 🔄 Phase 2: Visual Enhancements
-- [ ] Physical roulette wheel graphic (sector-colored, static)
-- [ ] Enhanced heatmap with sector clustering
-- [ ] Wheel pattern visualization (dealer signature)
+### ✅ Phase 2: Live Feed + OCR (v6.2-6.3)
+- [x] Live stats feed via getDisplayMedia (auto-trigger on input focus)
+- [x] User-adjustable feed crop (drag to pan, scroll/buttons to zoom)
+- [x] Feed position persists in localStorage
+- [x] Feed calibration tool (localhost:8888/calibrate)
+- [x] Gemini Flash OCR poller (10-second interval)
+- [x] Bootstrap mode — reads entire LAST 500 grid on first run
+- [x] Poll mode — diffs top row to detect new spins
+- [x] OCR history persistence (.tmp/ocr_history.json)
+- [x] Server endpoints: /ocr-spin, /ocr-bootstrap, /api/set-crop
+- [x] API key secured in .env (gitignored)
 
 ### 📋 Phase 3: Multi-Bet Types
 - [ ] Odd/Even predictions
@@ -488,11 +528,10 @@ CASINO/
 - [ ] High/Low predictions
 - [ ] Cross-dimension confluence scoring
 
-### 📋 Phase 4: Automation
-- [ ] OCR board screenshots automatically
-- [ ] Auto-prime from screenshot (no manual typing)
-- [ ] Live feed video overlay integration
+### 📋 Phase 4: Full Automation
+- [ ] OCR → engine auto-feed (wire /ocr-spin to frontend sim())
 - [ ] Session database (track P&L across sessions)
+- [ ] Multi-table support
 
 ---
 
@@ -500,6 +539,9 @@ CASINO/
 
 | Version | Date | Changes |
 |---|---|---|
+| v6.3 | 2026-05-14 | OCR poller: Gemini Flash auto-reader, bootstrap history, calibration tool |
+| v6.2 | 2026-05-14 | User-adjustable live feed (drag/zoom/persist), +/- zoom controls |
+| v6.1 | 2026-05-14 | Live stats feed via getDisplayMedia, auto-trigger on input focus |
 | v6.0 | 2026-05-14 | Mean-reversion FREQ, HOT cap, cold PASS, backtest validation (58% accuracy) |
 | v5.0 | 2026-05-14 | Dashboard layout lockdown, dimension call badges, bias bars |
 | v4.0 | 2026-05-13 | Gemini Flash integration, co-pilot log system |
