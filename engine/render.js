@@ -9,9 +9,9 @@ function render() {
   let hLabel = document.getElementById('hLabel');
 
   // Status: priming (not enough data)
-  if (hist.length < 20) {
+  if (hist.length < 10) {
     hPred.textContent = 'PRIMING'; hPred.className = 'hero-pred h-pass';
-    hLabel.textContent = 'Loading: ' + hist.length + '/20 spins needed';
+    hLabel.textContent = 'Loading: ' + hist.length + '/10 spins needed';
     hLabel.style.color = '#ffcc00';
   }
   // Status: dealer change recalibration
