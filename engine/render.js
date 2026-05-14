@@ -36,6 +36,45 @@ function render() {
   document.getElementById('hZero').textContent = zeroPct + '%';
   document.getElementById('hZeroBar').style.width = Math.min(zeroPct*5, 100) + '%';
 
+  // ===== DIMENSION CALL BADGES =====
+  if (hist.length >= 5) {
+    let r30 = hist.slice(0, 30).filter(h => h.color !== 'green');
+    let oddC = r30.filter(h => h.num % 2 === 1).length;
+    let evenC = r30.length - oddC;
+    let highC = r30.filter(h => h.num >= 19).length;
+    let lowC = r30.length - highC;
+    let d1C = r30.filter(h => h.num >= 1 && h.num <= 12).length;
+    let d2C = r30.filter(h => h.num >= 13 && h.num <= 24).length;
+    let d3C = r30.filter(h => h.num >= 25 && h.num <= 36).length;
+
+    function setDimCall(id, label1, val1, label2, val2) {
+      let el = document.getElementById(id);
+      if (!el) return;
+      let dominant = val1 >= val2 ? label1 : label2;
+      let pct = Math.round((Math.max(val1, val2) / (val1 + val2 || 1)) * 100);
+      let vEl = el.querySelector('.dim-value');
+      if (vEl) {
+        vEl.textContent = dominant;
+        vEl.style.color = pct > 60 ? '#ff9f0a' : pct > 55 ? '#ffcc00' : '#aab';
+      }
+    }
+    setDimCall('callOddEven', 'ODD', oddC, 'EVEN', evenC);
+    setDimCall('callHighLow', 'HIGH', highC, 'LOW', lowC);
+
+    // Dozen: show the hottest
+    let dMax = Math.max(d1C, d2C, d3C);
+    let dozenEl = document.getElementById('callDozen');
+    if (dozenEl) {
+      let dV = dozenEl.querySelector('.dim-value');
+      let dLabel = d1C === dMax ? 'D1' : d2C === dMax ? 'D2' : 'D3';
+      if (dV) {
+        dV.textContent = dLabel;
+        let dPct = Math.round((dMax / (d1C + d2C + d3C || 1)) * 100);
+        dV.style.color = dPct > 45 ? '#ff9f0a' : dPct > 38 ? '#ffcc00' : '#aab';
+      }
+    }
+  }
+
   // Hottest Pockets
   let freq = {};
   hist.slice(0,50).forEach(h => { freq[h.num] = (freq[h.num]||0)+1; });
@@ -92,6 +131,35 @@ function render() {
   document.getElementById('balB').style.width = (bc/t*100)+'%';
   document.getElementById('bRI').textContent = 'Red: '+rc;
   document.getElementById('bBI').textContent = 'Black: '+bc;
+
+  // ===== DIMENSION BIAS BARS (updated every spin) =====
+  let recent = hist.slice(0, 30); // last 30 for bias calculation
+  let rLen = recent.filter(h => h.color !== 'green').length || 1;
+  let rRed = recent.filter(h => h.color === 'red').length;
+  let rHigh = recent.filter(h => h.num >= 19 && h.num <= 36).length;
+  let rOdd = recent.filter(h => h.num > 0 && h.num !== 100 && h.num % 2 === 1).length;
+  let rD1 = recent.filter(h => h.num >= 1 && h.num <= 12).length;
+  let rD2 = recent.filter(h => h.num >= 13 && h.num <= 24).length;
+  let rD3 = recent.filter(h => h.num >= 25 && h.num <= 36).length;
+  let dLen = rD1 + rD2 + rD3 || 1;
+
+  function setBias(id, pctId, val, expected) {
+    let pct = Math.round(val * 100);
+    let el = document.getElementById(id);
+    let pctEl = document.getElementById(pctId);
+    if (el) el.style.width = pct + '%';
+    if (pctEl) {
+      pctEl.textContent = pct + '%';
+      let dev = Math.abs(pct - expected);
+      pctEl.style.color = dev > 10 ? '#ff2d55' : dev > 5 ? '#ffcc00' : '#667';
+    }
+  }
+  setBias('biasRed', 'biasRedPct', rRed / rLen, 47);
+  setBias('biasHigh', 'biasHighPct', rHigh / rLen, 47);
+  setBias('biasOdd', 'biasOddPct', rOdd / rLen, 47);
+  setBias('biasD1', 'biasD1Pct', rD1 / dLen, 33);
+  setBias('biasD2', 'biasD2Pct', rD2 / dLen, 33);
+  setBias('biasD3', 'biasD3Pct', rD3 / dLen, 33);
 
   // ===== WHEEL HEAT MAP (physical wheel order) =====
   let wgrid = document.getElementById('wgrid');

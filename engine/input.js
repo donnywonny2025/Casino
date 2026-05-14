@@ -161,7 +161,7 @@ function submit(val) {
   render();
   updateBankrollUI();
 
-  // Gemini: only call in live mode, never during bulk prime
+  // Gemini: call in live mode normally, force-call on bulk prime for baseline analysis
   if (!isBulk && typeof maybeCallGemini === 'function') maybeCallGemini();
   if (!isBulk) speak();
 
@@ -174,8 +174,16 @@ function submit(val) {
   if (isBulk) {
     console.log(`[Input] Prime complete — ${hist.length} spins loaded, engine ready`);
     flash('win'); // Green flash to confirm
-    // Clear the log for new session after bulk prime
-    fetch('/clear-log', { method: 'POST' }).catch(() => {});
+    // Clear the log for new session, then write baseline
+    fetch('/clear-log', { method: 'POST' }).then(() => {
+      // Fire Gemini immediately — pre-compute the full statistical landscape
+      // This gives the AI co-pilot a ready-made analysis before live play starts
+      if (typeof callGemini === 'function') {
+        console.log('[Input] Firing Gemini baseline analysis...');
+        geminiLastCall = 0; // Reset so it fires immediately
+        callGemini();
+      }
+    }).catch(() => {});
   }
 }
 

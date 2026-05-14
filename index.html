@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Edge Engine</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 
 <body>
@@ -13,37 +13,61 @@
   <!-- LEFT: Data & Analytics -->
   <div class="data">
 
-    <!-- Prediction Hero -->
-    <div class="hero">
-      <div class="hero-label" id="hLabel">Awaiting Data</div>
-      
-      <div style="display: flex; justify-content: center; align-items: center; gap: 20px;">
+    <!-- ===== TOP DASHBOARD: Prediction + Table ===== -->
+    <div class="dash-grid">
+
+      <!-- LEFT: Prediction Command -->
+      <div class="dash-pred">
+        <div class="hero-label" id="hLabel">Awaiting Data</div>
         <div class="hero-pred h-pass" id="hPred">—</div>
-        <!-- Number target hidden — focusing on color prediction -->
+        <div class="hero-sub" id="hSub"></div>
+
+        <!-- Multi-Dimension Calls -->
+        <div class="dim-calls" id="dimCalls">
+          <div class="dim-call" id="callOddEven"><span class="dim-label">O / E</span><span class="dim-value">—</span></div>
+          <div class="dim-call" id="callHighLow"><span class="dim-label">H / L</span><span class="dim-value">—</span></div>
+          <div class="dim-call" id="callDozen"><span class="dim-label">DOZEN</span><span class="dim-value">—</span></div>
+        </div>
+
+        <!-- Hot Numbers -->
+        <div style="margin-top:6px;">
+          <div style="font-size:8px; opacity:0.4; letter-spacing:1px; margin-bottom:2px;">HOT NUMBERS</div>
+          <div id="hHot" style="font-size:11px; font-weight:700; display:flex; gap:3px; flex-wrap:wrap;">--</div>
+        </div>
       </div>
 
-      <div class="hero-sub" id="hSub"></div>
-      <div class="hero-targets" id="hTargets" style="font-size: 11px; margin-top: 6px; letter-spacing: 0.5px; opacity: 0.8; color: #ffeb3b;"></div>
-      
-      <!-- Advanced Math Layer -->
-      <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); text-align: left;">
-        
-        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
-          <div style="font-size: 9px; opacity: 0.5; letter-spacing: 1px;">ZERO PROBABILITY</div>
-          <div id="hZero" style="font-size: 14px; color: #34c759; font-weight: 700;">--%</div>
-        </div>
-        <div style="height: 4px; background: #151825; border-radius: 2px; overflow: hidden; margin-bottom: 12px;">
-           <div id="hZeroBar" style="height: 100%; width: 0%; background: #34c759; transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.3s;"></div>
-        </div>
-
-        <div>
-          <div style="font-size: 9px; opacity: 0.5; letter-spacing: 1px; margin-bottom: 4px;">HOTTEST POCKETS</div>
-          <div id="hHot" style="font-size: 14px; font-weight: 700; color: #fff; display: flex; gap: 4px;">--</div>
-        </div>
+      <!-- RIGHT: Table Heatmap -->
+      <div class="dash-table">
+        <div class="table-grid" id="tgrid"></div>
       </div>
     </div>
 
-    <!-- Timing Telemetry Strip -->
+    <!-- Wheel Pattern (physical order — shows where hits cluster on the actual rotating wheel) -->
+    <div style="margin-top:6px;">
+      <div style="font-size:8px; opacity:0.4; letter-spacing:1px; margin-bottom:2px;">WHEEL PATTERN <span style="opacity:0.6">physical order · where the ball lands</span></div>
+      <div class="wheel-grid" id="wgrid"></div>
+    </div>
+
+    <!-- Dimension Bias Bars (3 columns) -->
+    <div id="biasBars" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; margin:8px 0 6px; font-size:10px;">
+      <div class="bias-row"><span>RED</span><div class="bias-track"><div class="bias-fill bias-red" id="biasRed" style="width:50%"></div></div><span id="biasRedPct">50%</span></div>
+      <div class="bias-row"><span>HIGH</span><div class="bias-track"><div class="bias-fill bias-high" id="biasHigh" style="width:50%"></div></div><span id="biasHighPct">50%</span></div>
+      <div class="bias-row"><span>ODD</span><div class="bias-track"><div class="bias-fill bias-odd" id="biasOdd" style="width:50%"></div></div><span id="biasOddPct">50%</span></div>
+      <div class="bias-row"><span>D1</span><div class="bias-track"><div class="bias-fill bias-d1" id="biasD1" style="width:33%"></div></div><span id="biasD1Pct">33%</span></div>
+      <div class="bias-row"><span>D2</span><div class="bias-track"><div class="bias-fill bias-d2" id="biasD2" style="width:33%"></div></div><span id="biasD2Pct">33%</span></div>
+      <div class="bias-row"><span>D3</span><div class="bias-track"><div class="bias-fill bias-d3" id="biasD3" style="width:33%"></div></div><span id="biasD3Pct">33%</span></div>
+    </div>
+
+    <!-- Zero Probability (compact) -->
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+      <span style="font-size:8px; opacity:0.4; letter-spacing:1px; width:28px;">ZERO</span>
+      <div style="flex:1; height:3px; background:#151825; border-radius:2px; overflow:hidden;">
+        <div id="hZeroBar" style="height:100%; width:0%; background:#34c759; transition:width 0.6s;"></div>
+      </div>
+      <span id="hZero" style="font-size:10px; color:#34c759; font-weight:700;">--%</span>
+    </div>
+
+    <!-- Timing Telemetry Strip (hidden by default) -->
     <div class="timing-strip" id="timingStrip" style="display:none;">
       <div class="timing-label">FLIGHT TELEMETRY <span style="float:right; font-size:8px;"><span onclick="undoFlightTime()" style="cursor:pointer; color:#ff2d55; margin-right:8px; opacity:0.6">↩ UNDO</span><span id="timingState" style="opacity:0.5">● IDLE</span></span></div>
       <div class="timing-clock" id="timingClock" onclick="triggerTiming()" style="cursor:pointer; text-align:center; font-size:28px; font-weight:900; font-family:'Inter',sans-serif; color:#2a2d3a; padding:6px 0; user-select:none; transition:color 0.2s">TAP</div>
@@ -51,22 +75,9 @@
       <div class="timing-stats" id="timingStats">Press [SPACE] or click above on ball drop</div>
     </div>
 
-    <!-- Gemini Analysis -->
-    <div class="sec">Table Analyst <span id="geminiStatus"
-        style="float:right; font-size:9px; font-weight:normal; letter-spacing:0.5px; opacity:0.7"></span></div>
-    <div class="gemini-panel" id="geminiInsight"
-      style="padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; margin-bottom: 20px; font-size: 11px; line-height: 1.4; color: #889;">
-      Waiting for 10 spins...
-    </div>
-
-    <!-- Live Ledger -->
-    <div class="sec">Session Stats</div>
-    <div class="stats-bar" style="margin-bottom: 20px; font-size: 14px;">
-      <span>BANKROLL <b class="y" id="bankrollVal" style="font-size: 16px;">$10.00</b></span>
-    </div>
-
-    <!-- Win/Loss Stats -->
-    <div class="stats-bar">
+    <!-- Session Stats (single compact row) -->
+    <div class="stats-bar" style="margin:4px 0;">
+      <span>BANK <b class="y" id="bankrollVal" style="font-size:13px;">$10.00</b></span>
       <span>W <b class="g" id="sW">0</b></span>
       <span>L <b class="r" id="sL">0</b></span>
       <span>PCT <b class="y" id="sP">—</b></span>
@@ -74,23 +85,20 @@
       <span>SPINS <b id="sN">0</b></span>
     </div>
 
-    <!-- Dealer Telemetry -->
+    <!-- Dealer + Signals -->
     <div class="dealer-row" id="dlr"></div>
     <div class="d-alert" id="dA"></div>
-
-    <!-- Signal Indicators -->
     <div class="sig-row" id="sigs"></div>
 
-    <!-- Wheel Heat Map (physical wheel order) -->
-    <div class="sec">Wheel Map <span style="font-size:8px;opacity:0.4;font-weight:400">physical order</span></div>
-    <div class="wheel-grid" id="wgrid"></div>
-
-    <!-- Table Heat Map (betting layout) -->
-    <div class="sec">Table Layout <span style="font-size:8px;opacity:0.4;font-weight:400">betting grid</span></div>
-    <div class="table-grid" id="tgrid"></div>
+    <!-- Gemini Analysis (scrollable) -->
+    <div class="sec" style="margin-top:4px">Table Analyst <span id="geminiStatus"
+        style="float:right; font-size:9px; font-weight:normal; letter-spacing:0.5px; opacity:0.7"></span></div>
+    <div class="gemini-panel" id="geminiInsight"
+      style="padding:8px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05); border-radius:6px; margin-bottom:8px; font-size:9px; line-height:1.35; color:#889; max-height:160px; overflow-y:auto;">
+      Waiting for data...
+    </div>
 
     <!-- Red/Black Balance -->
-    <div class="sec">Red / Black</div>
     <div class="bal">
       <div class="bal-r" id="balR" style="width:50%"></div>
       <div class="bal-b" id="balB" style="width:50%"></div>
@@ -99,9 +107,12 @@
       <span id="bRI">Red: 0</span>
       <span id="bBI">Black: 0</span>
     </div>
+
     <!-- Session Timeline -->
-    <div class="sec">Session Timeline</div>
     <div class="tl" id="tl"></div>
+
+    <!-- Hidden holders -->
+    <div id="hTargets" style="display:none;"></div>
   </div>
 
   <!-- RIGHT: Input & Spin Log -->
@@ -132,13 +143,13 @@
   <!-- Video Feed Background -->
   <video id="liveFeed" autoplay muted style="position:fixed; top:0; left:0; width:100vw; height:100vh; object-fit:cover; z-index:-1; opacity:0.25; display:none; pointer-events:none;"></video>
 
-  <script src="gemini_v2.js?v=4"></script>
-  <!-- Engine v4.0 — Co-Pilot Architecture -->
-  <script src="engine/state.js?v=4"></script>
-  <script src="engine/signals.js?v=4"></script>
-  <script src="engine/predict.js?v=4"></script>
-  <script src="engine/render.js?v=4"></script>
-  <script src="engine/input.js?v=4"></script>
+  <script src="gemini_v2.js?v=6"></script>
+  <!-- Engine v5.0 — Dashboard Architecture -->
+  <script src="engine/state.js?v=6"></script>
+  <script src="engine/signals.js?v=6"></script>
+  <script src="engine/predict.js?v=6"></script>
+  <script src="engine/render.js?v=6"></script>
+  <script src="engine/input.js?v=6"></script>
   <script>
     async function startLiveFeed() {
       try {
@@ -154,6 +165,7 @@
       }
     }
   </script>
+
 </body>
 
 </html>

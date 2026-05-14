@@ -108,24 +108,43 @@ function buildPayload() {
 }
 
 function buildPrompt(p) {
-  return `You are a statistical analyst for a live roulette session. Analyze the following data and produce a brief table state report. DO NOT predict the next spin. DO NOT advise bet sizes. Just report what the numbers show.
+  return `You are a professional statistical analyst for a live American Roulette session. Analyze the following data comprehensively. This analysis will be read by an AI co-pilot who is advising a human player in real-time. Make every word count.
 
 DATA (last ${p.color.total} spins of ${p.spinCount} total):
 - Last 10: ${p.last10}
 - Colors: Red ${p.color.red} / Black ${p.color.black} / Green ${p.color.green}
-- High/Low: High ${p.highLow.high} / Low ${p.highLow.low}
+- High(19-36)/Low(1-18): High ${p.highLow.high} / Low ${p.highLow.low}
 - Odd/Even: Odd ${p.oddEven.odd} / Even ${p.oddEven.even}
 - Dozens: D1(1-12)=${p.dozens.d1} D2(13-24)=${p.dozens.d2} D3(25-36)=${p.dozens.d3}
-- Dozen Droughts: D1 ${p.dozenDrought.d1} spins ago, D2 ${p.dozenDrought.d2} spins ago, D3 ${p.dozenDrought.d3} spins ago
-- Streaks: Current ${p.streaks.current}, Avg length ${p.streaks.avgLen}, Max ${p.streaks.maxLen}
+- Dozen Droughts: D1 last hit ${p.dozenDrought.d1} spins ago, D2 last hit ${p.dozenDrought.d2} spins ago, D3 last hit ${p.dozenDrought.d3} spins ago
+- Streaks: Current ${p.streaks.current}, Avg streak length ${p.streaks.avgLen}, Max streak ${p.streaks.maxLen}
 - Dealer: σ${p.dealer.stdev} (${p.dealer.consistency})
 - Engine Record: W${p.accuracy.wins}/L${p.accuracy.losses} (${p.accuracy.pct}%)
 
-REPORT FORMAT (plain text, no markdown, max 4 lines):
-Line 1: TABLE MODE — is the table in streak mode (long runs) or chop mode (alternating)? 
-Line 2: DOMINANT BIAS — which dimensions are running hot? (color, high/low, odd/even, dozens)
-Line 3: WATCH — any droughts, shifts, or emerging patterns worth flagging
-Line 4: TREND — is the table character stable or shifting?`;
+Expected baseline for American Roulette (38 pockets): Red 47.4%, Black 47.4%, Green 5.3%, High 47.4%, Low 47.4%, Each Dozen 31.6%.
+
+PRODUCE A FULL ANALYSIS (plain text, no markdown). Include ALL of the following:
+
+1. TABLE MODE: Streak mode (long runs) or chop mode (rapid alternating)? How pronounced?
+
+2. DISTRIBUTION DEVIATIONS: For each dimension (Red/Black, High/Low, Odd/Even, Dozens), state the ACTUAL percentage vs EXPECTED percentage. Flag anything more than 5% off baseline.
+
+3. TRANSITION PATTERNS: Based on the last 10 sequence, what tends to follow RED? What follows BLACK? Is there an alternating or continuation pattern?
+
+4. STREAK ANALYSIS: Current streak details. Historical streak continuation rate from this data. After a streak of 3+, how often does it continue vs break in this session?
+
+5. DOZEN ROTATION: Which dozen is hottest? Which is coldest? Any rotation pattern visible? (e.g., D2-D3-D2-D3 cycling, D1 frozen out)
+
+6. HOT ZONES: Based on the High/Low and Dozen data combined, which region of the board (1-6, 7-12, 13-18, 19-24, 25-30, 31-36) seems most active?
+
+7. DANGER SIGNALS: Anything that suggests the table is about to shift character? Dealer variance issues? Approaching mean reversion?
+
+8. NEXT 3 PREDICTIONS: Give your best statistical read for the next 3 spins:
+   - Next spin: RED or BLACK? Why?
+   - Spin after: Same or different? Why?  
+   - Third spin: What do you expect? Why?
+
+9. CONFIDENCE: On a scale of 1-10, how readable is this table right now? (10 = strong clear patterns, 1 = pure noise)`;
 }
 
 // ===== API CALL =====

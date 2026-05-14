@@ -73,27 +73,27 @@ function sigZone(h) {
   return { vote, str: R*0.8, label:'ZONE', reliability:rel, centroid:centIdx, concentration:R };
 }
 
-// ===== SIGNAL: FREQ (Z-Score Red/Black Distribution) =====
+// ===== SIGNAL: FREQ (Mean-Reversion Z-Score) =====
+// Roulette mean-reverts: if one color is over-represented, bet the OTHER
 function sigFreq(h) {
-  let dp = dealerP(h);
-  // Expand frequency analysis window if erratic
-  let windowSize = dp.sd > 9.0 ? 35 : 15;
-
-  if (h.length < 8) return { vote:'pass', str:0, label:'FREQ', reliability:0 };
-  let w = h.slice(0, windowSize).filter(s => s.color !== 'green');
+  if (h.length < 10) return { vote:'pass', str:0, label:'FREQ', reliability:0 };
+  // Short window — only last 20 spins matter for reversion
+  let w = h.slice(0, 20).filter(s => s.color !== 'green');
   if (w.length < 8) return { vote:'pass', str:0, label:'FREQ', reliability:0 };
   let r = w.filter(s => s.color === 'red').length;
   let n = w.length, p = 18/38, expected = n*p, sd = Math.sqrt(n*p*(1-p));
   let z = (r - expected) / sd;
   if (Math.abs(z) < 0.8) return { vote:'pass', str:0, label:'FREQ', reliability:0 };
   let rel = getReliability('FREQ');
-  return { vote: z > 0 ? 'red' : 'black', str: Math.min(Math.abs(z)/3, 1), label:'FREQ', reliability:rel };
+  // MEAN REVERSION: if red is over-represented (z>0), bet BLACK (and vice versa)
+  return { vote: z > 0 ? 'black' : 'red', str: Math.min(Math.abs(z)/3, 0.6), label:'FREQ', reliability:rel };
 }
 
-// ===== SIGNAL: FLOW (N-2 Markov Chain) =====
+// ===== SIGNAL: FLOW (N-2 Markov Chain — Recent 20 Only) =====
 function sigFlow(h) {
   if (h.length < 12) return { vote:'pass', str:0, label:'FLOW' };
-  let valid = h.filter(s => s.color !== 'green');
+  // Only look at last 20 spins — stale transitions poison predictions
+  let valid = h.slice(0, 20).filter(s => s.color !== 'green');
   if (valid.length < 8) return { vote:'pass', str:0, label:'FLOW' };
   let c0 = valid[0].color, c1 = valid[1].color;
   let trans = { red:0, black:0 }, total = 0;
@@ -111,28 +111,31 @@ function sigFlow(h) {
   if (total < 3) return { vote:'pass', str:0, label:'FLOW' };
   let rPct = trans.red/total, bPct = trans.black/total;
   let bias = Math.abs(rPct - bPct);
-  if (bias < 0.08) return { vote:'pass', str:0, label:'FLOW' };
+  if (bias < 0.10) return { vote:'pass', str:0, label:'FLOW' };
   let rel = getReliability('FLOW');
-  return { vote: rPct > bPct ? 'red' : 'black', str: bias*3, label:'FLOW', reliability:rel };
+  // Cap FLOW strength to prevent domination
+  return { vote: rPct > bPct ? 'red' : 'black', str: Math.min(bias*2.5, 0.6), label:'FLOW', reliability:rel };
 }
 
-// ===== SIGNAL: HOT (Number frequency spikes) =====
+// ===== SIGNAL: HOT (Number frequency spikes — capped strength) =====
 function sigHot(h) {
   if (h.length < 15) return { vote:'pass', str:0, label:'HOT', reliability:0 };
-  let w = h.slice(0, 20), freq = {};
+  // Tight 15-spin window — stale prime data was poisoning this
+  let w = h.slice(0, 15), freq = {};
   w.forEach(s => { freq[s.num] = (freq[s.num]||0)+1; });
   let expected = w.length / 38;
   let hotNums = [];
   for (let [num, count] of Object.entries(freq)) {
     let z = (count - expected) / Math.sqrt(expected * (1 - 1/38));
-    if (z > 1.5) hotNums.push({ num:parseInt(num), count, z });
+    if (z > 1.8) hotNums.push({ num:parseInt(num), count, z }); // Raised threshold
   }
   if (!hotNums.length) return { vote:'pass', str:0, label:'HOT', reliability:0 };
   let hotR = hotNums.filter(h => RED.has(h.num)).length;
   let hotB = hotNums.filter(h => BLK.has(h.num)).length;
   let vote = hotR > hotB ? 'red' : hotB > hotR ? 'black' : 'pass';
   let rel = getReliability('HOT');
-  return { vote, str: Math.min(hotNums[0].z/3, 1), label:'HOT', reliability:rel||0.3, hotNums };
+  // CAPPED at 0.5 — was dominating at 0.72 and wrong 57% of the time
+  return { vote, str: Math.min(hotNums[0].z/4, 0.5), label:'HOT', reliability:rel||0.3, hotNums };
 }
 
 // ===== SIGNAL: ACCEL (Delta acceleration — second derivative) =====

@@ -53,57 +53,93 @@ body {
   100% { transform: translateY(110vh); }
 }
 
-/* ===== PREDICTION HERO ===== */
-.hero { 
-  text-align: center; 
-  padding: 24px 0 16px; 
-  position: relative;
+/* ===== DASHBOARD GRID (prediction + table side by side) ===== */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 10px;
+  margin-bottom: 4px;
+  min-height: 320px; /* lock grid height */
+}
+.dash-pred {
+  text-align: center;
+  padding: 10px 8px;
   background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 4px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 320px; /* lock */
+}
+.dash-table {
+  padding: 4px;
+  background: rgba(255,255,255,0.01);
   border: 1px solid rgba(255,255,255,0.03);
-  border-radius: 2px;
-  margin-bottom: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  min-height: 320px; /* lock */
 }
 
-/* CORNER ACCENTS */
-.hero::after, .gemini-panel::after {
-  content: "";
-  position: absolute;
-  top: 0; right: 0;
-  width: 8px; height: 8px;
-  border-top: 1px solid rgba(255,255,255,0.3);
-  border-right: 1px solid rgba(255,255,255,0.3);
+/* DIMENSION CALL BADGES */
+.dim-calls {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 8px;
+}
+.dim-call {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  width: 76px; /* fixed width — no shift */
+  height: 38px; /* fixed height */
+}
+.dim-label {
+  font-size: 7px;
+  letter-spacing: 1px;
+  opacity: 0.4;
+  margin-bottom: 2px;
+}
+.dim-value {
+  font-size: 14px;
+  font-weight: 800;
+  font-family: 'Inter', sans-serif;
+  color: #aab;
+  min-width: 40px; /* prevent text shift */
+  text-align: center;
 }
 
-.hero::before, .gemini-panel::before {
-  content: "";
-  position: absolute;
-  bottom: 0; left: 0;
-  width: 8px; height: 8px;
-  border-bottom: 1px solid rgba(255,255,255,0.3);
-  border-left: 1px solid rgba(255,255,255,0.3);
-}
-
+/* ===== PREDICTION HERO ===== */
 .hero-label {
-  font-size: 10px;
+  font-size: 9px;
   color: #556;
   letter-spacing: 3px;
   text-transform: uppercase;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .hero-pred {
-  font-size: 80px;
+  font-size: 48px;
   font-weight: 900;
   font-family: 'Inter', sans-serif;
-  letter-spacing: 4px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   line-height: 1;
-  transition: all 0.3s;
+  transition: color 0.3s; /* only animate color, not size */
+  min-height: 52px; /* lock height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hero-pred.h-red   { color: #ff2d55; }
 .hero-pred.h-black { color: #e8e8e8; }
-.hero-pred.h-pass  { color: #2a2d3a; font-size: 40px; }
+.hero-pred.h-pass  { color: #2a2d3a; font-size: 36px; }
 
 .hero-sub {
   display: flex;
@@ -131,6 +167,7 @@ body {
   padding: 4px 0;
   border-top: 1px solid #151825;
   border-bottom: 1px solid #151825;
+  min-height: 28px; /* lock */
 }
 
 .stats-bar b { margin-left: 3px; }
@@ -199,7 +236,8 @@ body {
   display: grid;
   grid-template-columns: repeat(19, 1fr);
   gap: 2px;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
+  min-height: 64px; /* lock — two rows */
 }
 .wc {
   aspect-ratio: 1;
@@ -207,39 +245,39 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: 3px;
   border: 1.5px solid transparent;
-  transition: all 0.3s;
+  transition: background 0.3s, border-color 0.3s; /* no size transitions */
   cursor: default;
   position: relative;
   min-width: 0;
 }
-.wc .nn { font-size: 11px; font-weight: 700; line-height: 1; }
-.wc .ct { font-size: 7px; color: #667; line-height: 1; margin-top: 1px; }
+.wc .nn { font-size: 10px; font-weight: 700; line-height: 1; }
+.wc .ct { font-size: 6px; color: #667; line-height: 1; margin-top: 1px; }
 .wc.wc-target { border-color: rgba(255,235,59,0.6); box-shadow: 0 0 6px rgba(255,235,59,0.3); }
 .wc.wc-last { border-color: rgba(255,255,255,0.5); box-shadow: 0 0 4px rgba(255,255,255,0.2); }
 
 /* ===== TABLE HEAT MAP ===== */
 .table-grid {
   display: grid;
-  grid-template-columns: auto repeat(3, 1fr);
+  grid-template-columns: 30px repeat(3, 1fr);
   gap: 2px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 .tc {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: 3px;
   border: 1.5px solid transparent;
-  transition: all 0.3s;
+  transition: background 0.3s, border-color 0.3s; /* no size transitions */
   cursor: default;
-  padding: 4px 0;
-  min-height: 28px;
+  padding: 2px 0;
+  height: 24px; /* fixed height — no shift */
 }
-.tc .nn { font-size: 12px; font-weight: 700; line-height: 1; }
-.tc .ct { font-size: 7px; color: #667; line-height: 1; margin-top: 1px; }
+.tc .nn { font-size: 11px; font-weight: 700; line-height: 1; }
+.tc .ct { font-size: 6px; color: #667; line-height: 1; margin-top: 1px; }
 .tc.tc-zero { grid-column: 1; }
 .tc.tc-target { border-color: rgba(255,235,59,0.6); box-shadow: 0 0 6px rgba(255,235,59,0.3); }
 .tc.tc-last { border-color: rgba(255,255,255,0.5); box-shadow: 0 0 4px rgba(255,255,255,0.2); }
@@ -548,3 +586,42 @@ body {
   box-shadow: 0 6px 12px rgba(0,0,0,0.5);
 }
 
+/* ===== DIMENSION BIAS BARS ===== */
+.bias-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #667;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+}
+.bias-row > span:first-child {
+  width: 28px;
+  text-align: right;
+  font-weight: 700;
+  color: #889;
+}
+.bias-row > span:last-child {
+  width: 32px;
+  text-align: right;
+  font-weight: 700;
+}
+.bias-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.bias-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease, background 0.3s;
+}
+.bias-red { background: #ff2d55; }
+.bias-high { background: #ff9f0a; }
+.bias-odd { background: #8af; }
+.bias-d1 { background: #34c759; }
+.bias-d2 { background: #ffcc00; }
+.bias-d3 { background: #af52de; }

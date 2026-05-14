@@ -104,10 +104,13 @@ function predict() {
   let total = pRed + pBlack + pGreen;
   pRed /= total; pBlack /= total;
 
-  // Momentum adjustment
+  // Momentum adjustment — cold = sit out, hot = tiny nudge only
   let momentum = getMomentum();
-  if (momentum === 'hot') { pRed *= 1.05; pBlack *= 1.05; }
-  if (momentum === 'cold') { let d = 0.92; pRed = 0.5 + (pRed-0.5)*d; pBlack = 0.5 + (pBlack-0.5)*d; }
+  if (momentum === 'hot') { pRed *= 1.02; pBlack *= 1.02; } // Was 1.05 — too aggressive
+  if (momentum === 'cold') {
+    // Force PASS when cold — engine was 23W/16R wrong during cold streaks
+    return pred = { color:'pass', conf:0, reason:'Cold streak — sitting out', signals, dp, targets:[], bet:{size:0,label:'SIT'}, momentum:'cold' };
+  }
 
   // Re-normalize
   total = pRed + pBlack;
