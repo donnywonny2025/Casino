@@ -6,6 +6,7 @@ import signal
 from datetime import datetime, timezone
 
 LOG_FILE = '.tmp/engine_log.jsonl'
+LEDGER_FILE = '.tmp/prediction_ledger.jsonl'  # Permanent — never cleared
 ocr_process = None  # Global ref to OCR poller subprocess
 
 class EdgeHandler(SimpleHTTPRequestHandler):
@@ -32,6 +33,10 @@ class EdgeHandler(SimpleHTTPRequestHandler):
                 
                 # Append one JSON line to the log file
                 with open(LOG_FILE, 'a') as f:
+                    f.write(json.dumps(data) + '\n')
+                
+                # Permanent ledger — never cleared, tracks all predictions forever
+                with open(LEDGER_FILE, 'a') as f:
                     f.write(json.dumps(data) + '\n')
                 
                 spin = data.get('spin', '?')
