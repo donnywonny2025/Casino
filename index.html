@@ -117,6 +117,21 @@
 
   <!-- RIGHT: Input & Spin Log -->
   <div class="rpanel">
+
+    <!-- Casino Stats Feed (cropped from screen capture) -->
+    <div class="feed-wrap" id="feedWrap">
+      <div class="feed-header">
+        <span class="feed-dot"></span> CASINO STATS
+        <span id="feedStatus" style="float:right; font-size:9px; color:#556;">OFFLINE</span>
+      </div>
+      <div class="feed-viewport" id="feedViewport">
+        <video id="statsFeed" autoplay muted></video>
+        <div class="feed-placeholder" id="feedPlaceholder">
+          <div style="font-size:11px; color:#556; text-align:center; padding:20px;">Click CONNECT below<br>to link FanDuel stats</div>
+        </div>
+      </div>
+    </div>
+
     <div class="inp-wrap">
       <div class="inp-label">Enter Number <span id="chrono"
           style="float:right; font-size:10px; color:#556; cursor:pointer;">[SPACE] clock off</span></div>
@@ -128,9 +143,14 @@
         <button class="sim-btn" style="background: rgba(255,45,85,0.1); color: #ff2d55; margin-top: 0; flex: 1;"
           onclick="undoLastSpin()">↩ Undo Last</button>
       </div>
-      <button class="sim-btn" style="background: rgba(0, 122, 255, 0.1); color: #007aff; margin-top: 5px; width: 100%; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="startLiveFeed()">
-        <span style="display:inline-block; width:8px; height:8px; background:#007aff; border-radius:50%; box-shadow: 0 0 8px #007aff;"></span> CONNECT CASINO FEED
-      </button>
+      <div style="display:flex; gap: 5px; margin-top: 5px;">
+        <button class="sim-btn" style="background: rgba(0, 122, 255, 0.1); color: #007aff; margin-top: 0; flex: 1; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="startLiveFeed()">
+          <span style="display:inline-block; width:8px; height:8px; background:#007aff; border-radius:50%; box-shadow: 0 0 8px #007aff;"></span> CONNECT
+        </button>
+        <button class="sim-btn" style="background: rgba(255,255,255,0.04); color: #667; margin-top: 0; flex: 0.6; font-size:10px;" onclick="disconnectFeed()">
+          ✕ DISCONNECT
+        </button>
+      </div>
       <div class="sim-res" id="simRes"></div>
       <div class="inp-info">R:<b id="fR">0</b> · B:<b id="fB">0</b> · G:<b id="fG">0</b></div>
     </div>
@@ -140,29 +160,48 @@
 
   <div class="flash" id="flash"></div>
 
-  <!-- Video Feed Background -->
-  <video id="liveFeed" autoplay muted style="position:fixed; top:0; left:0; width:100vw; height:100vh; object-fit:cover; z-index:-1; opacity:0.25; display:none; pointer-events:none;"></video>
-
-  <script src="gemini_v2.js?v=6"></script>
-  <!-- Engine v5.0 — Dashboard Architecture -->
-  <script src="engine/state.js?v=6"></script>
-  <script src="engine/signals.js?v=6"></script>
-  <script src="engine/predict.js?v=6"></script>
-  <script src="engine/render.js?v=6"></script>
-  <script src="engine/input.js?v=6"></script>
+  <script src="gemini_v2.js?v=7"></script>
+  <!-- Engine v6.0 — Bayesian Mean-Reversion -->
+  <script src="engine/state.js?v=7"></script>
+  <script src="engine/signals.js?v=7"></script>
+  <script src="engine/predict.js?v=7"></script>
+  <script src="engine/render.js?v=7"></script>
+  <script src="engine/input.js?v=7"></script>
   <script>
+    let feedStream = null;
+
     async function startLiveFeed() {
       try {
         const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: { cursor: "always" },
-          audio: false
+          video: { cursor: 'never' },
+          audio: true
         });
-        const videoObj = document.getElementById('liveFeed');
-        videoObj.srcObject = stream;
-        videoObj.style.display = 'block';
+        feedStream = stream;
+        const video = document.getElementById('statsFeed');
+        video.srcObject = stream;
+        video.style.display = 'block';
+        document.getElementById('feedPlaceholder').style.display = 'none';
+        document.getElementById('feedStatus').textContent = '● LIVE';
+        document.getElementById('feedStatus').style.color = '#34c759';
+
+        // Auto-detect when user stops sharing
+        stream.getVideoTracks()[0].onended = () => disconnectFeed();
       } catch(err) {
-        console.error("Error: " + err);
+        console.error('[Feed] ' + err);
       }
+    }
+
+    function disconnectFeed() {
+      if (feedStream) {
+        feedStream.getTracks().forEach(t => t.stop());
+        feedStream = null;
+      }
+      const video = document.getElementById('statsFeed');
+      video.srcObject = null;
+      video.style.display = 'none';
+      document.getElementById('feedPlaceholder').style.display = 'block';
+      document.getElementById('feedStatus').textContent = 'OFFLINE';
+      document.getElementById('feedStatus').style.color = '#556';
     }
   </script>
 
