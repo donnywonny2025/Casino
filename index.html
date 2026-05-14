@@ -397,6 +397,12 @@
         ocrLastTs = data.ts;
         const num = String(data.number);
 
+        // DEDUP: skip if this number matches the most recent spin in history
+        if (hist.length > 0 && String(hist[0].num) === num) {
+          console.log('[OCR] Dedup: ' + num + ' already latest in hist, skipping');
+          return;
+        }
+
         // Flash the status
         const dot = document.getElementById('ocrDot');
         const label = document.getElementById('ocrLabel');

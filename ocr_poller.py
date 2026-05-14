@@ -144,35 +144,29 @@ def gemini_read(b64_image, prompt):
 
 def detect_new_spins(current_row, previous_row):
     """Compare current top row to previous. Return list of new numbers."""
-    if not previous_row:
-        return []  # First read, don't fire
+    if not previous_row or not current_row:
+        return []  # First read or empty, don't fire
     
     if current_row == previous_row:
         return []  # No change
     
-    if not current_row:
-        return []
-    
-    # Find how many new numbers shifted in from the left
-    # The top row shifts right when a new spin happens
+    # Simple and reliable: find how many new numbers were prepended
+    # by looking for where the old first number now sits in the new row
+    old_first = previous_row[0]
     new_numbers = []
+    
     for i, num in enumerate(current_row):
-        if i >= len(previous_row) or num != previous_row[0]:
-            # Check if this number starts matching the old row at some offset
-            remaining = current_row[i:]
-            for offset in range(len(previous_row)):
-                if previous_row[offset:offset+3] == remaining[:3] and len(remaining) >= 3:
-                    # Found where old row starts in new row
-                    new_numbers = current_row[:i]
-                    return new_numbers
-        else:
+        if num == old_first:
+            # Found where old data starts — everything before this is new
+            new_numbers = current_row[:i]
             break
     
-    # Simple case: just the first number is new
-    if current_row[0] != previous_row[0]:
-        return [current_row[0]]
+    # If we didn't find the old first number at all, just take the first number
+    # (can happen if the row shifted by more than its length)
+    if not new_numbers and current_row[0] != previous_row[0]:
+        new_numbers = [current_row[0]]
     
-    return []
+    return new_numbers
 
 def feed_to_engine(number):
     """POST a new spin number to the engine."""
