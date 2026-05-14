@@ -29,15 +29,17 @@ function render() {
   }
   // Status: pass (no signal alignment)
   else if (p.color === 'pass') {
+    let lastNum = hist.length > 0 ? dn(hist[0].num) : '—';
     hPred.textContent = 'PASS'; hPred.className = 'hero-pred h-pass';
-    hLabel.textContent = 'Awaiting signal alignment';
+    hLabel.textContent = lastNum + ' landed → NO BET';
     hLabel.style.color = '#556';
   }
   // Status: active prediction
   else {
+    let lastNum = hist.length > 0 ? dn(hist[0].num) : '—';
     hPred.textContent = p.color.toUpperCase(); hPred.className = 'hero-pred h-' + p.color;
     let betLabel = p.bet ? p.bet.label : 'LEAN';
-    hLabel.textContent = 'BET ' + betLabel + ' → ' + p.color.toUpperCase();
+    hLabel.textContent = lastNum + ' landed → PICK ' + p.color.toUpperCase();
     hLabel.style.color = p.color === 'red' ? '#ff2d55' : '#aab';
   }
 
