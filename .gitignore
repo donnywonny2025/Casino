@@ -1,3 +1,4 @@
-.vision/
+.env
 .tmp/
+.vision/
 node_modules/

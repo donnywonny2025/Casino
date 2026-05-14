@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Feed Calibration</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0c14;
+      color: #ccc;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .main {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #050710;
+    }
+
+    video {
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    /* The crop selection rectangle */
+    .crop-box {
+      position: absolute;
+      border: 2px solid #34c759;
+      background: rgba(52, 199, 89, 0.08);
+      cursor: move;
+      z-index: 10;
+      min-width: 50px;
+      min-height: 50px;
+    }
+
+    /* Resize handle */
+    .crop-box .resize {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 12px;
+      height: 12px;
+      background: #34c759;
+      border-radius: 2px;
+      cursor: nwse-resize;
+    }
+
+    /* Dim overlay outside the crop */
+    .dim-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .sidebar {
+      width: 320px;
+      background: #0d0f18;
+      border-left: 1px solid #1e2235;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    h2 {
+      font-size: 13px;
+      color: #34c759;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .preview-box {
+      width: 100%;
+      aspect-ratio: 1;
+      background: #050710;
+      border: 1px solid #1e2235;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-box canvas {
+      max-width: 100%;
+      max-height: 100%;
+      image-rendering: auto;
+    }
+
+    .coords {
+      font-size: 11px;
+      color: #556;
+      line-height: 1.8;
+    }
+
+    .coords span {
+      color: #ffcc00;
+      font-weight: bold;
+    }
+
+    button {
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .btn-start {
+      background: rgba(0, 122, 255, 0.15);
+      color: #007aff;
+      border: 1px solid rgba(0, 122, 255, 0.3);
+    }
+
+    .btn-save {
+      background: rgba(52, 199, 89, 0.15);
+      color: #34c759;
+      border: 1px solid rgba(52, 199, 89, 0.3);
+    }
+
+    .btn-save:hover { background: rgba(52, 199, 89, 0.25); }
+
+    .status {
+      font-size: 10px;
+      color: #445;
+      text-align: center;
+    }
+
+    .saved-msg {
+      color: #34c759;
+      font-size: 11px;
+      text-align: center;
+      display: none;
+    }
+
+    .instructions {
+      font-size: 10px;
+      color: #445;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="main" id="mainArea">
+    <video id="vid" autoplay muted></video>
+    <div class="crop-box" id="cropBox" style="width: 300px; height: 400px; top: 200px; left: 600px;">
+      <div class="resize" id="resizeHandle"></div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <h2>⬡ Feed Calibration</h2>
+
+    <button class="btn-start" onclick="startCapture()">Share FanDuel Tab</button>
+
+    <div class="instructions">
+      1. Click "Share FanDuel Tab" and pick the casino tab<br>
+      2. Drag the green box over the stats panel<br>
+      3. Resize using the corner handle<br>
+      4. Check the preview below<br>
+      5. Click "Save Coordinates" when it looks right
+    </div>
+
+    <h2 style="margin-top: 8px;">Live Preview</h2>
+    <div class="preview-box">
+      <canvas id="previewCanvas" width="300" height="400"></canvas>
+    </div>
+
+    <div class="coords" id="coordsDisplay">
+      Source: <span>—</span><br>
+      Crop X: <span>—</span> &nbsp; Y: <span>—</span><br>
+      Size: <span>—</span> × <span>—</span>
+    </div>
+
+    <button class="btn-save" onclick="saveCoords()">Save Coordinates</button>
+    <div class="saved-msg" id="savedMsg">✓ Coordinates saved!</div>
+
+    <div class="status" id="status">Waiting for screen share...</div>
+  </div>
+
+  <script>
+    const vid = document.getElementById('vid');
+    const cropBox = document.getElementById('cropBox');
+    const resizeHandle = document.getElementById('resizeHandle');
+    const previewCanvas = document.getElementById('previewCanvas');
+    const ctx = previewCanvas.getContext('2d');
+    const mainArea = document.getElementById('mainArea');
+
+    let stream = null;
+    let videoW = 0, videoH = 0;
+
+    // Load saved crop if exists
+    const saved = JSON.parse(localStorage.getItem('ocrCrop') || 'null');
+    if (saved) {
+      cropBox.style.left = saved.boxLeft + 'px';
+      cropBox.style.top = saved.boxTop + 'px';
+      cropBox.style.width = saved.boxW + 'px';
+      cropBox.style.height = saved.boxH + 'px';
+    }
+
+    async function startCapture() {
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: 'never' },
+          audio: false
+        });
+        vid.srcObject = stream;
+        vid.onloadedmetadata = () => {
+          videoW = vid.videoWidth;
+          videoH = vid.videoHeight;
+          document.getElementById('status').textContent =
+            'Source: ' + videoW + '×' + videoH + ' — Drag the green box over the stats panel';
+        };
+        // Start preview loop
+        requestAnimationFrame(updatePreview);
+      } catch(e) {
+        document.getElementById('status').textContent = 'Cancelled: ' + e.message;
+      }
+    }
+
+    function updatePreview() {
+      if (!stream || vid.readyState < 2) {
+        requestAnimationFrame(updatePreview);
+        return;
+      }
+
+      // Get crop box position relative to the video display
+      const vidRect = vid.getBoundingClientRect();
+      const boxRect = cropBox.getBoundingClientRect();
+
+      // Convert display coordinates to video source coordinates
+      const scaleX = videoW / vidRect.width;
+      const scaleY = videoH / vidRect.height;
+
+      const srcX = Math.max(0, (boxRect.left - vidRect.left) * scaleX);
+      const srcY = Math.max(0, (boxRect.top - vidRect.top) * scaleY);
+      const srcW = Math.min(videoW - srcX, boxRect.width * scaleX);
+      const srcH = Math.min(videoH - srcY, boxRect.height * scaleY);
+
+      // Update preview canvas size to match crop aspect ratio
+      previewCanvas.width = srcW;
+      previewCanvas.height = srcH;
+
+      // Draw cropped region to preview
+      ctx.drawImage(vid, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+
+      // Update coordinates display
+      document.getElementById('coordsDisplay').innerHTML =
+        'Source: <span>' + videoW + '×' + videoH + '</span><br>' +
+        'Crop X: <span>' + Math.round(srcX) + '</span> &nbsp; Y: <span>' + Math.round(srcY) + '</span><br>' +
+        'Size: <span>' + Math.round(srcW) + '</span> × <span>' + Math.round(srcH) + '</span>';
+
+      requestAnimationFrame(updatePreview);
+    }
+
+    function saveCoords() {
+      const vidRect = vid.getBoundingClientRect();
+      const boxRect = cropBox.getBoundingClientRect();
+
+      const scaleX = videoW / vidRect.width;
+      const scaleY = videoH / vidRect.height;
+
+      const crop = {
+        srcX: Math.round((boxRect.left - vidRect.left) * scaleX),
+        srcY: Math.round((boxRect.top - vidRect.top) * scaleY),
+        srcW: Math.round(boxRect.width * scaleX),
+        srcH: Math.round(boxRect.height * scaleY),
+        videoW: videoW,
+        videoH: videoH,
+        // Also save the box display position for reload
+        boxLeft: parseInt(cropBox.style.left),
+        boxTop: parseInt(cropBox.style.top),
+        boxW: parseInt(cropBox.style.width),
+        boxH: parseInt(cropBox.style.height)
+      };
+
+      localStorage.setItem('ocrCrop', JSON.stringify(crop));
+
+      // Also POST to server so backend knows the coordinates
+      fetch('/api/set-crop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(crop)
+      }).catch(() => {});
+
+      const msg = document.getElementById('savedMsg');
+      msg.style.display = 'block';
+      msg.textContent = '✓ Saved! Crop: ' + crop.srcX + ',' + crop.srcY + ' ' + crop.srcW + '×' + crop.srcH;
+      setTimeout(() => { msg.style.display = 'none'; }, 5000);
+    }
+
+    // — Drag the crop box —
+    let isDragging = false, isResizing = false;
+    let dragStartX, dragStartY, origLeft, origTop, origW, origH;
+
+    cropBox.addEventListener('mousedown', (e) => {
+      if (e.target === resizeHandle) return; // handled separately
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      origLeft = parseInt(cropBox.style.left) || cropBox.offsetLeft;
+      origTop = parseInt(cropBox.style.top) || cropBox.offsetTop;
+      e.preventDefault();
+    });
+
+    resizeHandle.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      origW = cropBox.offsetWidth;
+      origH = cropBox.offsetHeight;
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        cropBox.style.left = (origLeft + e.clientX - dragStartX) + 'px';
+        cropBox.style.top = (origTop + e.clientY - dragStartY) + 'px';
+      }
+      if (isResizing) {
+        cropBox.style.width = Math.max(50, origW + e.clientX - dragStartX) + 'px';
+        cropBox.style.height = Math.max(50, origH + e.clientY - dragStartY) + 'px';
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      isResizing = false;
+    });
+  </script>
+
+</body>
+</html>
