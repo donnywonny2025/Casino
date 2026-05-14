@@ -4,23 +4,55 @@
 function render() {
   let p = pred || predict();
 
-  // Hero Prediction
+  // Hero Prediction — with status messaging
   let hPred = document.getElementById('hPred');
   let hLabel = document.getElementById('hLabel');
-  if (p.color === 'pass') {
+
+  // Status: priming (not enough data)
+  if (hist.length < 20) {
+    hPred.textContent = 'PRIMING'; hPred.className = 'hero-pred h-pass';
+    hLabel.textContent = 'Loading: ' + hist.length + '/20 spins needed';
+    hLabel.style.color = '#ffcc00';
+  }
+  // Status: dealer change recalibration
+  else if (dealerChanged || (typeof dealerShiftCountdown !== 'undefined' && dealerShiftCountdown > 0)) {
+    let remaining = typeof dealerShiftCountdown !== 'undefined' ? dealerShiftCountdown : '?';
+    hPred.textContent = 'CALIBRATING'; hPred.className = 'hero-pred h-pass';
+    hLabel.textContent = 'Dealer shift — recalibrating (' + remaining + ')';
+    hLabel.style.color = '#ff9500';
+  }
+  // Status: cold momentum (forced sit out)
+  else if (p.color === 'pass' && p.momentum === 'cold') {
+    hPred.textContent = 'COLD'; hPred.className = 'hero-pred h-pass';
+    hLabel.textContent = '⚠ Cold streak — sitting out';
+    hLabel.style.color = '#ff2d55';
+  }
+  // Status: pass (no signal alignment)
+  else if (p.color === 'pass') {
     hPred.textContent = 'PASS'; hPred.className = 'hero-pred h-pass';
-    hLabel.textContent = 'Awaiting Signal';
-  } else {
+    hLabel.textContent = 'Awaiting signal alignment';
+    hLabel.style.color = '#556';
+  }
+  // Status: active prediction
+  else {
     hPred.textContent = p.color.toUpperCase(); hPred.className = 'hero-pred h-' + p.color;
-    hLabel.textContent = 'Strike Zone: ' + p.color.toUpperCase();
+    let betLabel = p.bet ? p.bet.label : 'LEAN';
+    hLabel.textContent = 'BET ' + betLabel + ' → ' + p.color.toUpperCase();
+    hLabel.style.color = p.color === 'red' ? '#ff2d55' : '#aab';
   }
 
-  // Confidence display (no bet sizing — prediction accuracy is the focus)
+  // Confidence + bet sizing display
   let hSub = document.getElementById('hSub');
   let confClass = p.conf >= 70 ? 'hc-hi' : p.conf >= 55 ? 'hc-md' : 'hc-lo';
-  if (p.color !== 'pass') {
+  if (hist.length < 20) {
+    let pct = Math.round((hist.length / 20) * 100);
+    hSub.innerHTML = `<span class="hero-conf hc-lo">${hist.length}/20</span><span class="hero-bet" style="color:#ffcc00">PRIMING ${pct}%</span>`;
+  } else if (p.color !== 'pass') {
+    let betStr = p.bet ? `$${p.bet.size.toFixed(2)} ${p.bet.label}` : '';
     let postStr = p.posterior ? ` <span style="font-size:9px;opacity:0.5">(${p.posterior.red}R/${p.posterior.black}B)</span>` : '';
-    hSub.innerHTML = `<span class="hero-conf ${confClass}">${p.conf}%${postStr}</span>`;
+    hSub.innerHTML = `<span class="hero-conf ${confClass}">${p.conf}%${postStr}</span><span class="hero-bet">${betStr}</span>`;
+  } else if (p.momentum === 'cold') {
+    hSub.innerHTML = `<span class="hero-conf hc-lo">—</span><span class="hero-bet" style="color:#ff2d55">🧊 SIT OUT</span>`;
   } else {
     hSub.innerHTML = `<span class="hero-conf hc-lo">—</span><span class="hero-bet">SIT OUT</span>`;
   }
