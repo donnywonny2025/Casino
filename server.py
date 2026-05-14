@@ -137,6 +137,41 @@ class EdgeHandler(SimpleHTTPRequestHandler):
             self.end_headers()
 
     def do_GET(self):
+        # API endpoints (return JSON)
+        if self.path == '/api/ocr-latest':
+            try:
+                with open('.tmp/ocr_latest.json') as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(data.encode('utf-8'))
+            except FileNotFoundError:
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(b'{"number":null}')
+            return
+
+        if self.path == '/api/ocr-bootstrap':
+            try:
+                with open('.tmp/ocr_bootstrap.json') as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(data.encode('utf-8'))
+            except FileNotFoundError:
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(b'{"numbers":[]}')
+            return
+
         # Serve calibration page
         if self.path == '/calibrate':
             self.path = '/calibrate.html'

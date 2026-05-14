@@ -138,6 +138,25 @@
       </div>
     </div>
 
+    <!-- OCR Auto-Feed Status Bar -->
+    <div id="ocrBar" style="padding:6px 10px; background:linear-gradient(180deg, #080c14 0%, #0a0f1a 100%); border-bottom:1px solid #151825; font-family:'SF Mono',monospace; font-size:9px; letter-spacing:1px;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span id="ocrDot" style="width:6px; height:6px; border-radius:50%; background:#333; display:inline-block;"></span>
+          <span id="ocrLabel" style="color:#445;">OCR OFF</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span id="ocrTimer" style="color:#334;"></span>
+          <span id="ocrLastNum" style="color:#334;"></span>
+          <button id="ocrToggle" onclick="toggleOcr()" style="height:18px; padding:0 8px; background:#0e1018; border:1px solid #1e2235; border-radius:3px; color:#556; font-size:8px; cursor:pointer; letter-spacing:1px; font-family:'SF Mono',monospace;">START</button>
+        </div>
+      </div>
+      <!-- Scan progress bar -->
+      <div style="margin-top:4px; height:2px; background:#111; border-radius:1px; overflow:hidden;">
+        <div id="ocrProgress" style="width:0%; height:100%; background:linear-gradient(90deg, #34c759, #30d158); transition:width 1s linear;"></div>
+      </div>
+    </div>
+
     <div class="inp-wrap">
       <div class="inp-label">Enter Number <span id="chrono"
           style="float:right; font-size:10px; color:#556; cursor:pointer;">[SPACE] clock off</span></div>
@@ -255,6 +274,143 @@
       window.feedZoomOut = () => { feedZ = Math.max(0.1, feedZ - 0.05); applyFeedTransform(); };
       window.feedReset = () => { feedX = 0; feedY = 0; feedZ = 0.3; applyFeedTransform(); };
     });
+
+    // ===== OCR AUTO-FEED SYSTEM =====
+    let ocrActive = false;
+    let ocrPollInterval = null;
+    let ocrLastTs = null;
+    let ocrCountdown = 10;
+    let ocrCountdownInterval = null;
+    let ocrBootstrapped = false;
+    const OCR_POLL_MS = 3000; // Check server every 3s
+    const OCR_CYCLE = 10;     // Poller runs every 10s
+
+    function toggleOcr() {
+      ocrActive = !ocrActive;
+      const btn = document.getElementById('ocrToggle');
+      const dot = document.getElementById('ocrDot');
+      const label = document.getElementById('ocrLabel');
+
+      if (ocrActive) {
+        btn.textContent = 'STOP';
+        btn.style.color = '#ff2d55';
+        btn.style.borderColor = 'rgba(255,45,85,0.3)';
+        dot.style.background = '#34c759';
+        dot.style.boxShadow = '0 0 6px #34c759';
+        label.style.color = '#34c759';
+        label.textContent = 'OCR ACTIVE';
+
+        // Check for bootstrap data first
+        if (!ocrBootstrapped) {
+          checkBootstrap();
+        }
+
+        // Start polling
+        ocrPollInterval = setInterval(pollOcrLatest, OCR_POLL_MS);
+        ocrCountdown = OCR_CYCLE;
+        ocrCountdownInterval = setInterval(updateCountdown, 1000);
+        updateCountdown();
+      } else {
+        btn.textContent = 'START';
+        btn.style.color = '#556';
+        btn.style.borderColor = '#1e2235';
+        dot.style.background = '#333';
+        dot.style.boxShadow = 'none';
+        label.style.color = '#445';
+        label.textContent = 'OCR OFF';
+        document.getElementById('ocrTimer').textContent = '';
+        document.getElementById('ocrProgress').style.width = '0%';
+
+        clearInterval(ocrPollInterval);
+        clearInterval(ocrCountdownInterval);
+      }
+    }
+
+    function updateCountdown() {
+      if (!ocrActive) return;
+      ocrCountdown = Math.max(0, ocrCountdown - 1);
+      document.getElementById('ocrTimer').textContent = ocrCountdown + 's';
+      document.getElementById('ocrTimer').style.color = '#556';
+      // Progress bar: fills over 10 seconds
+      const pct = ((OCR_CYCLE - ocrCountdown) / OCR_CYCLE) * 100;
+      document.getElementById('ocrProgress').style.width = pct + '%';
+      if (ocrCountdown <= 0) ocrCountdown = OCR_CYCLE;
+    }
+
+    async function checkBootstrap() {
+      try {
+        const resp = await fetch('/api/ocr-bootstrap');
+        const data = await resp.json();
+        if (data.numbers && data.numbers.length > 0) {
+          ocrBootstrapped = true;
+          const label = document.getElementById('ocrLabel');
+          label.textContent = 'BOOTSTRAP: ' + data.numbers.length + ' spins';
+          label.style.color = '#ffcc00';
+
+          // Feed as bulk prime — reversed because OCR reads newest-first
+          // but the engine expects the bulk paste to be newest-first too
+          const bulkStr = data.numbers.join(' ');
+          document.getElementById('inp').value = bulkStr;
+          submit(bulkStr);
+          document.getElementById('inp').value = '';
+
+          setTimeout(() => {
+            if (ocrActive) {
+              label.textContent = 'OCR ACTIVE';
+              label.style.color = '#34c759';
+            }
+          }, 3000);
+        }
+      } catch(e) {
+        console.log('[OCR] Bootstrap check failed:', e);
+      }
+    }
+
+    async function pollOcrLatest() {
+      if (!ocrActive) return;
+      try {
+        const resp = await fetch('/api/ocr-latest');
+        const data = await resp.json();
+
+        if (data.number === null || data.number === undefined) return;
+        if (data.ts === ocrLastTs) return; // Already processed
+
+        // New spin detected!
+        ocrLastTs = data.ts;
+        const num = String(data.number);
+
+        // Flash the status
+        const dot = document.getElementById('ocrDot');
+        const label = document.getElementById('ocrLabel');
+        const lastNum = document.getElementById('ocrLastNum');
+        dot.style.background = '#ff9500';
+        dot.style.boxShadow = '0 0 8px #ff9500';
+        label.textContent = 'NEW SPIN →';
+        label.style.color = '#ff9500';
+        lastNum.textContent = num;
+        lastNum.style.color = '#fff';
+        lastNum.style.fontWeight = 'bold';
+
+        // Submit to engine
+        submit(num);
+        ocrCountdown = OCR_CYCLE; // Reset timer
+
+        // Reset status after flash
+        setTimeout(() => {
+          if (ocrActive) {
+            dot.style.background = '#34c759';
+            dot.style.boxShadow = '0 0 6px #34c759';
+            label.textContent = 'OCR ACTIVE';
+            label.style.color = '#34c759';
+            lastNum.style.color = '#556';
+            lastNum.style.fontWeight = 'normal';
+          }
+        }, 2000);
+
+      } catch(e) {
+        // Server not responding — silently retry
+      }
+    }
   </script>
 
 </body>
