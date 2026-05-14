@@ -63,20 +63,34 @@ last_row = []
 spins_detected = 0
 
 def capture_and_crop():
-    """Screenshot FanDuel tab and crop to stats panel."""
+    """Screenshot FanDuel tab WITHOUT stealing focus (no switch_tab)."""
     tmp_path = '.tmp/ocr_frame.png'
+    abs_path = os.path.abspath(tmp_path)
     
-    # Use browser-harness to screenshot the FanDuel tab
+    # Use CDP to screenshot the FanDuel tab in the background
     script = f'''
-import time
+import base64 as b64mod
 tabs = cdp("Target.getTargets", {{}})
 pages = [t for t in tabs.get("targetInfos", []) if t.get("type") == "page"]
 fd = [t for t in pages if "fanduel" in t.get("url","").lower() or "launcher.casino" in t.get("url","").lower()]
 if fd:
-    switch_tab(fd[0]["targetId"])
-    time.sleep(0.5)
-    capture_screenshot("{os.path.abspath(tmp_path)}")
-    print("OK")
+    tid = fd[0]["targetId"]
+    # Attach WITHOUT activating — no focus steal
+    session = cdp("Target.attachToTarget", {{"targetId": tid, "flatten": True}})
+    sid = session.get("sessionId")
+    if sid:
+        result = cdp("Page.captureScreenshot", {{"format": "png"}}, session_id=sid)
+        if result and result.get("data"):
+            img_data = b64mod.b64decode(result["data"])
+            with open("{abs_path}", "wb") as f:
+                f.write(img_data)
+            cdp("Target.detachFromTarget", {{"sessionId": sid}})
+            print("OK")
+        else:
+            cdp("Target.detachFromTarget", {{"sessionId": sid}})
+            print("NO_SCREENSHOT")
+    else:
+        print("NO_SESSION")
 else:
     print("NO_TAB")
 '''
@@ -85,17 +99,16 @@ else:
         capture_output=True, text=True, timeout=15
     )
     
-    if 'NO_TAB' in result.stdout:
+    if 'OK' not in result.stdout:
+        if result.stderr:
+            print(f"[OCR] Capture error: {result.stderr[:200]}")
         return None
     
-    # Find the actual file (browser-harness appends timestamp)
-    import glob
-    files = sorted(glob.glob('.tmp/ocr_frame*.png'), key=os.path.getmtime, reverse=True)
-    if not files:
+    if not os.path.exists(tmp_path):
         return None
     
     # Open and crop
-    img = Image.open(files[0])
+    img = Image.open(tmp_path)
     scale_x = img.size[0] / crop['videoW']
     scale_y = img.size[1] / crop['videoH']
     
