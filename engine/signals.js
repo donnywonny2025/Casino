@@ -50,9 +50,13 @@ function sigDealer(h) {
 
 // ===== SIGNAL: ZONE (Circular Centroid Clustering) =====
 function sigZone(h) {
-  if (h.length < 15) return { vote:'pass', str:0, label:'ZONE', reliability:0 };
-  let positions = h.slice(0, 15).map(s => WHEEL.indexOf(s.num)).filter(i => i >= 0);
-  if (positions.length < 10) return { vote:'pass', str:0, label:'ZONE', reliability:0 };
+  let dp = dealerP(h);
+  // Expand memory to 30 spins if dealer is erratic to filter out noise, keep it tight (8) if dealer is streaking
+  let windowSize = dp.sd > 9.0 ? 30 : dp.sd > 6.0 ? 15 : 8;
+
+  if (h.length < 8) return { vote:'pass', str:0, label:'ZONE', reliability:0 };
+  let positions = h.slice(0, windowSize).map(s => WHEEL.indexOf(s.num)).filter(i => i >= 0);
+  if (positions.length < 5) return { vote:'pass', str:0, label:'ZONE', reliability:0 };
   let sinSum = positions.reduce((a,p) => a + Math.sin(2*Math.PI*p/38), 0);
   let cosSum = positions.reduce((a,p) => a + Math.cos(2*Math.PI*p/38), 0);
   let R = Math.sqrt(sinSum*sinSum + cosSum*cosSum) / positions.length;
@@ -71,8 +75,12 @@ function sigZone(h) {
 
 // ===== SIGNAL: FREQ (Z-Score Red/Black Distribution) =====
 function sigFreq(h) {
-  if (h.length < 12) return { vote:'pass', str:0, label:'FREQ', reliability:0 };
-  let w = h.slice(0, 30).filter(s => s.color !== 'green');
+  let dp = dealerP(h);
+  // Expand frequency analysis window if erratic
+  let windowSize = dp.sd > 9.0 ? 35 : 15;
+
+  if (h.length < 8) return { vote:'pass', str:0, label:'FREQ', reliability:0 };
+  let w = h.slice(0, windowSize).filter(s => s.color !== 'green');
   if (w.length < 8) return { vote:'pass', str:0, label:'FREQ', reliability:0 };
   let r = w.filter(s => s.color === 'red').length;
   let n = w.length, p = 18/38, expected = n*p, sd = Math.sqrt(n*p*(1-p));
@@ -110,8 +118,8 @@ function sigFlow(h) {
 
 // ===== SIGNAL: HOT (Number frequency spikes) =====
 function sigHot(h) {
-  if (h.length < 30) return { vote:'pass', str:0, label:'HOT', reliability:0 };
-  let w = h.slice(0, 50), freq = {};
+  if (h.length < 15) return { vote:'pass', str:0, label:'HOT', reliability:0 };
+  let w = h.slice(0, 20), freq = {};
   w.forEach(s => { freq[s.num] = (freq[s.num]||0)+1; });
   let expected = w.length / 38;
   let hotNums = [];
@@ -149,7 +157,7 @@ function sigAccel(h) {
 
 // ===== META-SIGNAL: ENTROPY (pattern density modifier) =====
 function getEntropy(h) {
-  let valid = h.slice(0,20).filter(s => s.color !== 'green');
+  let valid = h.slice(0,12).filter(s => s.color !== 'green');
   if (valid.length < 10) return 1;
   let bigrams = {RR:0, RB:0, BR:0, BB:0};
   for (let i=0; i<valid.length-1; i++) {

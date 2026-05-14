@@ -1,6 +1,82 @@
 // ===== INPUT.JS — Submit, keyboard, simulate, undo, flash, timing, voice, boot =====
 // Depends on: state.js, signals.js, predict.js, render.js
 
+// ===== ENGINE LOG WRITER =====
+// Writes every spin to .tmp/engine_log.jsonl via server
+// AI reads this via: tail -5 .tmp/engine_log.jsonl (sub-second, no screenshots)
+function writeLog(num, color) {
+  if (!pred) return;
+  
+  // Compute live confluence metrics
+  let last20 = hist.slice(0, 20);
+  let rc = last20.filter(h => h.color === 'red').length;
+  let bc = last20.filter(h => h.color === 'black').length;
+  let hc = last20.filter(h => h.num >= 19 && h.num <= 36).length;
+  let lc = last20.filter(h => h.num >= 1 && h.num <= 18).length;
+  let oc = last20.filter(h => h.num > 0 && h.num !== 100 && h.num % 2 === 1).length;
+  let ec = last20.filter(h => h.num > 0 && h.num !== 100 && h.num % 2 === 0).length;
+  let d1 = last20.filter(h => h.num >= 1 && h.num <= 12).length;
+  let d2 = last20.filter(h => h.num >= 13 && h.num <= 24).length;
+  let d3 = last20.filter(h => h.num >= 25 && h.num <= 36).length;
+  
+  // Color streak
+  let streakColor = hist.length > 0 ? hist[0].color : 'none';
+  let streakLen = 0;
+  for (let i = 0; i < hist.length; i++) {
+    if (hist[i].color === streakColor) streakLen++;
+    else break;
+  }
+  
+  // Confluence count: how many dimensions agree with the prediction
+  let confluence = 0;
+  if (pred.color !== 'pass') {
+    // Color trend (last 20)
+    if (pred.color === 'red' && rc > bc) confluence++;
+    if (pred.color === 'black' && bc > rc) confluence++;
+    // Color streak (3+)
+    if (streakLen >= 3 && streakColor === pred.color) confluence++;
+    // High/Low alignment
+    if (pred.color === 'red' || pred.color === 'black') {
+      // RED numbers lean toward odd/high statistically
+      if (hc > lc + 2) confluence++; // HIGH is running
+      if (ec > oc + 2) confluence++; // EVEN is running
+    }
+    // Dozen heat
+    if (d2 > d1 + 2 || d3 > d1 + 2) confluence++;
+  }
+  
+  let logEntry = {
+    spin: hist.length,
+    num: dn(num),
+    color: color,
+    pred: pred.color,
+    conf: pred.conf,
+    bet: pred.bet || { label: 'WAIT', size: 0 },
+    streak: { color: streakColor, length: streakLen },
+    dozens: { d1, d2, d3 },
+    highLow: { high: hc, low: lc },
+    oddEven: { odd: oc, even: ec },
+    redBlack: { red: rc, black: bc },
+    confluence: confluence,
+    bankroll: Math.round(bankroll * 100) / 100,
+    wl: { w: wins, l: losses, pct: (wins + losses) > 0 ? Math.round(wins / (wins + losses) * 100) + '%' : '-' },
+    result: null // filled in after scoring
+  };
+  
+  // If we just scored this spin, add the result
+  if (outcomeLog.length > 0) {
+    let lastOutcome = outcomeLog[outcomeLog.length - 1];
+    logEntry.result = lastOutcome.result;
+  }
+  
+  // Fire and forget — don't wait for response
+  fetch('/log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(logEntry)
+  }).catch(() => {}); // Silent fail — never block the UI
+}
+
 // ===== INPUT HANDLING =====
 function submit(val) {
   let tokens = val.trim().split(/[\s,]+/).filter(t => t.length);
@@ -89,9 +165,17 @@ function submit(val) {
   if (!isBulk && typeof maybeCallGemini === 'function') maybeCallGemini();
   if (!isBulk) speak();
 
+  // Write to engine log for AI co-pilot (live mode only)
+  if (!isBulk && tokens.length === 1) {
+    let lastSpin = hist[0];
+    if (lastSpin) writeLog(lastSpin.num, lastSpin.color);
+  }
+
   if (isBulk) {
     console.log(`[Input] Prime complete — ${hist.length} spins loaded, engine ready`);
     flash('win'); // Green flash to confirm
+    // Clear the log for new session after bulk prime
+    fetch('/clear-log', { method: 'POST' }).catch(() => {});
   }
 }
 

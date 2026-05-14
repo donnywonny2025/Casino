@@ -7,9 +7,9 @@ const BLK  = new Set([2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35]);
 let hist = [];
 let wins = 0, losses = 0, streak = 0;
 let pred = null;
-let bankroll = 22.03;
-let startBankroll = 22.03;
-let sessionHigh = 22.03;
+let bankroll = 10.00;
+let startBankroll = 10.00;
+let sessionHigh = 10.00;
 let plLog = [];  // P&L history: [{spin, bet, result, delta, balance}]
 let signalHits = { DEALER:0, ZONE:0, FREQ:0, FLOW:0, HOT:0, ACCEL:0 };
 let signalTotal = { DEALER:0, ZONE:0, FREQ:0, FLOW:0, HOT:0, ACCEL:0 };
@@ -80,7 +80,7 @@ function loadState() {
     if (s && s.hist && s.hist.length) {
       hist = s.hist; wins = s.wins||0; losses = s.losses||0; streak = s.streak||0;
       outcomeLog = s.outcomeLog||[];
-      bankroll = s.bankroll || 22.03;
+      bankroll = s.bankroll || 10.00;
       startBankroll = s.startBankroll || bankroll;
       sessionHigh = s.sessionHigh || bankroll;
       plLog = s.plLog || [];

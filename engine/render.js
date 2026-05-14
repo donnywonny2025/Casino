@@ -15,16 +15,14 @@ function render() {
     hLabel.textContent = 'Strike Zone: ' + p.color.toUpperCase();
   }
 
-  // Confidence + Kelly Bet Sizing
+  // Confidence display (no bet sizing — prediction accuracy is the focus)
   let hSub = document.getElementById('hSub');
   let confClass = p.conf >= 70 ? 'hc-hi' : p.conf >= 55 ? 'hc-md' : 'hc-lo';
-  let betInfo = p.bet || { size:0, label:'LEAN' };
-  let betText = betInfo.size > 0 ? `$${betInfo.size} ${betInfo.label}` : betInfo.label;
   if (p.color !== 'pass') {
     let postStr = p.posterior ? ` <span style="font-size:9px;opacity:0.5">(${p.posterior.red}R/${p.posterior.black}B)</span>` : '';
-    hSub.innerHTML = `<span class="hero-conf ${confClass}">${p.conf}%${postStr}</span><span class="hero-bet">${betText}</span>`;
+    hSub.innerHTML = `<span class="hero-conf ${confClass}">${p.conf}%${postStr}</span>`;
   } else {
-    hSub.innerHTML = `<span class="hero-conf hc-lo">—</span><span class="hero-bet">${betInfo.label === 'STOP' ? '⛔ WALK AWAY' : 'SIT OUT'}</span>`;
+    hSub.innerHTML = `<span class="hero-conf hc-lo">—</span><span class="hero-bet">SIT OUT</span>`;
   }
 
   // Targets

@@ -24,42 +24,42 @@ function detectDealerShift() {
   return Math.abs(rSD - pSD) > 4 || Math.abs(rAvg - pAvg) > 6;
 }
 
-// ===== KELLY CRITERION BET SIZING (bankroll-aware) =====
-function kellyBet(prob) {
+// ===== KELLY CRITERION BET SIZING (bankroll-aware & variance-throttled) =====
+// Calibrated for $10 bankroll: LEAN=$0.50, BASE=$1.00, STRONG=$1.50, MAX=$2.00
+function kellyBet(prob, sd) {
   let edge = prob * 2 - 1; // Edge over even-money bet
   let health = startBankroll > 0 ? bankroll / startBankroll : 1;
 
-  // === SURVIVAL MODES ===
-  if (bankroll <= 0) return { size:0, label:'STOP', reason:'Bankroll depleted' };
-  if (health <= 0.25) return { size:0, label:'STOP', reason:'Below 25% — protect remaining funds' };
-  if (streak <= -5) return { size:0, label:'STOP', reason:'5+ loss streak — hard stop' };
+  // === LIMITS ===
+  if (bankroll <= 2) return { size:0, label:'STOP', reason:'Bankroll critical — walk away' };
   if (edge <= 0.02) return { size:0, label:'LEAN', reason:'No edge detected' };
 
   // === BANKROLL-PROPORTIONAL SIZING ===
-  let fraction = edge * 0.25; // Quarter-Kelly for safety
+  // Quarter-Kelly limits variance while maximizing compound growth
+  let fraction = edge * 0.25; 
   let rawBet = bankroll * fraction;
 
-  // Hard cap: never risk more than 15% of remaining bankroll
-  rawBet = Math.min(rawBet, bankroll * 0.15);
-
-  // === HEALTH MODIFIERS ===
-  if (health < 0.5) rawBet *= 0.5;        // Below 50%: halve sizing
-  else if (health < 0.75) rawBet *= 0.75;  // Below 75%: reduce 25%
-  else if (health > 1.3 && streak >= 2) rawBet *= 1.2; // Up 30%+ and winning: loosen slightly
-
   // Cold streak dampening
-  if (streak <= -3) rawBet = Math.min(rawBet, 1);
+  if (streak <= -3) rawBet = Math.min(rawBet, 0.5);
+  if (streak <= -5) return { size:0, label:'LEAN', reason:'High variance — sit out' };
 
   // Round to nearest $0.50 increment, minimum $0.50
   let bet = Math.max(0.5, Math.round(rawBet * 2) / 2);
-  // Never bet more than bankroll
-  bet = Math.min(bet, bankroll);
+  
+  // === PHYSICAL VARIANCE THROTTLE ===
+  if (sd >= 9.0) {
+    bet = Math.min(bet, 0.5); // Cap at LEAN
+  }
+
+  // Hard cap: never risk more than 20% of remaining bankroll
+  bet = Math.min(bet, bankroll * 0.20);
+  bet = Math.min(bet, 2.00); // Absolute max $2.00 on a $10 roll
+  bet = Math.max(0.5, Math.round(bet * 2) / 2); // Re-snap to $0.50 grid
 
   let label;
-  if (bet >= 5) label = 'MAX';
-  else if (bet >= 3) label = 'STRONG';
-  else if (bet >= 2) label = 'BASE';
-  else if (bet >= 1) label = 'HALF';
+  if (bet >= 2.0) label = 'MAX';
+  else if (bet >= 1.5) label = 'STRONG';
+  else if (bet >= 1.0) label = 'BASE';
   else label = 'LEAN';
 
   return { size: bet, label };
@@ -126,7 +126,7 @@ function predict() {
   if (dealerChanged && softReset > 4) conf = Math.min(conf, 55);
 
   // Kelly bet sizing
-  let bet = kellyBet(Math.max(pRed, pBlack));
+  let bet = kellyBet(Math.max(pRed, pBlack), dp.sd);
 
   // Targets (pocket prediction when physics is strong)
   let targets = [];

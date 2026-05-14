@@ -52,7 +52,7 @@
     </div>
 
     <!-- Gemini Analysis -->
-    <div class="sec">Gemini Intel <span id="geminiStatus"
+    <div class="sec">Table Analyst <span id="geminiStatus"
         style="float:right; font-size:9px; font-weight:normal; letter-spacing:0.5px; opacity:0.7"></span></div>
     <div class="gemini-panel" id="geminiInsight"
       style="padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; margin-bottom: 20px; font-size: 11px; line-height: 1.4; color: #889;">
@@ -60,10 +60,9 @@
     </div>
 
     <!-- Live Ledger -->
-    <div class="sec">Live Ledger</div>
+    <div class="sec">Session Stats</div>
     <div class="stats-bar" style="margin-bottom: 20px; font-size: 14px;">
-      <span>BANKROLL <b class="y" id="bankrollVal" style="font-size: 16px;">$22.03</b></span>
-      <span style="opacity: 0.6; font-size: 10px;">( LEAN:$0 | HALF:$1 | BASE:$2 | STRONG:$3 | MAX:$5 )</span>
+      <span>BANKROLL <b class="y" id="bankrollVal" style="font-size: 16px;">$10.00</b></span>
     </div>
 
     <!-- Win/Loss Stats -->
@@ -133,13 +132,13 @@
   <!-- Video Feed Background -->
   <video id="liveFeed" autoplay muted style="position:fixed; top:0; left:0; width:100vw; height:100vh; object-fit:cover; z-index:-1; opacity:0.25; display:none; pointer-events:none;"></video>
 
-  <script src="gemini_v2.js?v=58001"></script>
-  <!-- Engine v3.0 — Modular Architecture -->
-  <script src="engine/state.js?v=3"></script>
-  <script src="engine/signals.js?v=3"></script>
-  <script src="engine/predict.js?v=3"></script>
-  <script src="engine/render.js?v=3"></script>
-  <script src="engine/input.js?v=3"></script>
+  <script src="gemini_v2.js?v=4"></script>
+  <!-- Engine v4.0 — Co-Pilot Architecture -->
+  <script src="engine/state.js?v=4"></script>
+  <script src="engine/signals.js?v=4"></script>
+  <script src="engine/predict.js?v=4"></script>
+  <script src="engine/render.js?v=4"></script>
+  <script src="engine/input.js?v=4"></script>
   <script>
     async function startLiveFeed() {
       try {
