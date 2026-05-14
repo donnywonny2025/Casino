@@ -127,7 +127,7 @@
       <div class="feed-viewport" id="feedViewport">
         <video id="statsFeed" autoplay muted></video>
         <div class="feed-placeholder" id="feedPlaceholder">
-          <div style="font-size:11px; color:#556; text-align:center; padding:20px;">Click CONNECT below<br>to link FanDuel stats</div>
+          <div style="font-size:11px; color:#556; text-align:center; padding:20px;">Click the input field below<br>to connect FanDuel stats</div>
         </div>
       </div>
     </div>
@@ -142,14 +142,6 @@
           onclick="forceDealerChange()">⟳ Dealer Change</button>
         <button class="sim-btn" style="background: rgba(255,45,85,0.1); color: #ff2d55; margin-top: 0; flex: 1;"
           onclick="undoLastSpin()">↩ Undo Last</button>
-      </div>
-      <div style="display:flex; gap: 5px; margin-top: 5px;">
-        <button class="sim-btn" style="background: rgba(0, 122, 255, 0.1); color: #007aff; margin-top: 0; flex: 1; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="startLiveFeed()">
-          <span style="display:inline-block; width:8px; height:8px; background:#007aff; border-radius:50%; box-shadow: 0 0 8px #007aff;"></span> CONNECT
-        </button>
-        <button class="sim-btn" style="background: rgba(255,255,255,0.04); color: #667; margin-top: 0; flex: 0.6; font-size:10px;" onclick="disconnectFeed()">
-          ✕ DISCONNECT
-        </button>
       </div>
       <div class="sim-res" id="simRes"></div>
       <div class="inp-info">R:<b id="fR">0</b> · B:<b id="fB">0</b> · G:<b id="fG">0</b></div>
@@ -169,8 +161,11 @@
   <script src="engine/input.js?v=7"></script>
   <script>
     let feedStream = null;
+    let feedAttempted = false;
 
     async function startLiveFeed() {
+      if (feedStream || feedAttempted) return; // Already connected or already tried
+      feedAttempted = true;
       try {
         const stream = await navigator.mediaDevices.getDisplayMedia({
           video: { cursor: 'never' },
@@ -183,11 +178,10 @@
         document.getElementById('feedPlaceholder').style.display = 'none';
         document.getElementById('feedStatus').textContent = '● LIVE';
         document.getElementById('feedStatus').style.color = '#34c759';
-
-        // Auto-detect when user stops sharing
         stream.getVideoTracks()[0].onended = () => disconnectFeed();
       } catch(err) {
-        console.error('[Feed] ' + err);
+        console.log('[Feed] User declined or error: ' + err);
+        feedAttempted = false; // Allow retry on next click
       }
     }
 
@@ -196,6 +190,7 @@
         feedStream.getTracks().forEach(t => t.stop());
         feedStream = null;
       }
+      feedAttempted = false;
       const video = document.getElementById('statsFeed');
       video.srcObject = null;
       video.style.display = 'none';
@@ -203,6 +198,12 @@
       document.getElementById('feedStatus').textContent = 'OFFLINE';
       document.getElementById('feedStatus').style.color = '#556';
     }
+
+    // Auto-trigger feed on first input click — no buttons needed
+    document.addEventListener('DOMContentLoaded', () => {
+      const inp = document.getElementById('inp');
+      inp.addEventListener('focus', () => startLiveFeed(), { once: false });
+    });
   </script>
 
 </body>
