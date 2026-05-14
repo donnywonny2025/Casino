@@ -63,8 +63,10 @@ function writeLog(num, color) {
     result: null // filled in after scoring
   };
   
-  // If we just scored this spin, add the result
-  if (outcomeLog.length > 0) {
+  // Score the result correctly
+  if (logEntry.pred === 'pass') {
+    logEntry.result = 'SKIP'; // PASS predictions are not scored
+  } else if (outcomeLog.length > 0) {
     let lastOutcome = outcomeLog[outcomeLog.length - 1];
     logEntry.result = lastOutcome.result;
   }

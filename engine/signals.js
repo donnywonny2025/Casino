@@ -83,10 +83,11 @@ function sigFreq(h) {
   let r = w.filter(s => s.color === 'red').length;
   let n = w.length, p = 18/38, expected = n*p, sd = Math.sqrt(n*p*(1-p));
   let z = (r - expected) / sd;
-  if (Math.abs(z) < 0.8) return { vote:'pass', str:0, label:'FREQ', reliability:0 };
+  if (Math.abs(z) < 1.2) return { vote:'pass', str:0, label:'FREQ', reliability:0 };
   let rel = getReliability('FREQ');
   // MEAN REVERSION: if red is over-represented (z>0), bet BLACK (and vice versa)
-  return { vote: z > 0 ? 'black' : 'red', str: Math.min(Math.abs(z)/3, 0.6), label:'FREQ', reliability:rel };
+  // Capped at 0.4 — was 0.6 and consistently wrong during trending tables
+  return { vote: z > 0 ? 'black' : 'red', str: Math.min(Math.abs(z)/3, 0.4), label:'FREQ', reliability:rel };
 }
 
 // ===== SIGNAL: FLOW (N-2 Markov Chain — Recent 20 Only) =====
@@ -113,8 +114,8 @@ function sigFlow(h) {
   let bias = Math.abs(rPct - bPct);
   if (bias < 0.10) return { vote:'pass', str:0, label:'FLOW' };
   let rel = getReliability('FLOW');
-  // Cap FLOW strength to prevent domination
-  return { vote: rPct > bPct ? 'red' : 'black', str: Math.min(bias*2.5, 0.6), label:'FLOW', reliability:rel };
+  // FLOW is our strongest signal — raise cap to let it drive predictions
+  return { vote: rPct > bPct ? 'red' : 'black', str: Math.min(bias*2.5, 0.8), label:'FLOW', reliability:rel };
 }
 
 // ===== SIGNAL: HOT (Number frequency spikes — capped strength) =====
