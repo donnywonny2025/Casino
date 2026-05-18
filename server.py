@@ -234,8 +234,18 @@ class EdgeHandler(SimpleHTTPRequestHandler):
         global ocr_process
         # API endpoints (return JSON)
         if self.path == '/api/ocr-status':
-            running = ocr_process is not None and ocr_process.poll() is None
-            pid = ocr_process.pid if running else None
+            # Check PID file — works regardless of how poller was started
+            running = False
+            pid = None
+            pid_file = '.tmp/ocr.pid'
+            if os.path.exists(pid_file):
+                try:
+                    pid = int(open(pid_file).read().strip())
+                    os.kill(pid, 0)  # Check if alive
+                    running = True
+                except (ProcessLookupError, ValueError, PermissionError):
+                    running = False
+                    pid = None
             self.send_response(200)
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Content-Type', 'application/json')

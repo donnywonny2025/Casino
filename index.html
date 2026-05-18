@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Edge Engine</title>
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="style.css?v=11">
 </head>
 
 <body>
@@ -185,14 +185,14 @@
 
   <div class="flash" id="flash"></div>
 
-  <script src="gemini_v2.js?v=9"></script>
+  <script src="gemini_v2.js?v=11"></script>
   <!-- Engine v6.0 — Bayesian Mean-Reversion -->
-  <script src="engine/state.js?v=9"></script>
-  <script src="engine/signals.js?v=10"></script>
-  <script src="engine/predict.js?v=10"></script>
-  <script src="engine/profiles.js?v=9"></script>
-  <script src="engine/render.js?v=9"></script>
-  <script src="engine/input.js?v=9"></script>
+  <script src="engine/state.js?v=11"></script>
+  <script src="engine/signals.js?v=12"></script>
+  <script src="engine/predict.js?v=11"></script>
+  <script src="engine/profiles.js?v=11"></script>
+  <script src="engine/render.js?v=11"></script>
+  <script src="engine/input.js?v=11"></script>
   <script>
     // Profile save/load helpers
     function promptSaveProfile() {
@@ -474,6 +474,28 @@
         // Server not responding — silently retry
       }
     }
+
+    // ===== AUTO-RESUME: detect running poller on page load =====
+    (async function autoResumeOcr() {
+      try {
+        const resp = await fetch('/api/ocr-status');
+        const data = await resp.json();
+        if (data.running) {
+          console.log('[OCR] Auto-resume: poller running (PID ' + data.pid + ')');
+          ocrActive = true;
+          ocrBootstrapped = true;
+          ocrPollInterval = setInterval(pollOcrLatest, OCR_POLL_MS);
+          document.getElementById('ocrToggle').textContent = 'STOP';
+          document.getElementById('ocrToggle').style.color = '#ff2d55';
+          document.getElementById('ocrDot').style.background = '#34c759';
+          document.getElementById('ocrDot').style.boxShadow = '0 0 6px #34c759';
+          document.getElementById('ocrLabel').textContent = 'OCR ACTIVE (auto-resumed)';
+          document.getElementById('ocrLabel').style.color = '#34c759';
+          // Also check for bootstrap data
+          checkBootstrap();
+        }
+      } catch(e) {}
+    })();
   </script>
 
 </body>

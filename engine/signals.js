@@ -51,8 +51,8 @@ function sigDealer(h) {
 // ===== SIGNAL: ZONE (Circular Centroid Clustering) =====
 function sigZone(h) {
   let dp = dealerP(h);
-  // Expand memory to 30 spins if dealer is erratic to filter out noise, keep it tight (8) if dealer is streaking
-  let windowSize = dp.sd > 9.0 ? 30 : dp.sd > 6.0 ? 15 : 8;
+  // Use deep history: 100 if erratic, 75 if moderate, 50 if streaking
+  let windowSize = dp.sd > 9.0 ? 100 : dp.sd > 6.0 ? 75 : 50;
 
   if (h.length < 8) return { vote:'pass', str:0, label:'ZONE', reliability:0 };
   let positions = h.slice(0, windowSize).map(s => WHEEL.indexOf(s.num)).filter(i => i >= 0);
@@ -77,8 +77,8 @@ function sigZone(h) {
 // Roulette mean-reverts: if one color is over-represented, bet the OTHER
 function sigFreq(h) {
   if (h.length < 10) return { vote:'pass', str:0, label:'FREQ', reliability:0 };
-  // Short window — only last 20 spins matter for reversion
-  let w = h.slice(0, 20).filter(s => s.color !== 'green');
+  // Use full history for reversion detection — more data = more stable Z-score
+  let w = h.slice(0, 100).filter(s => s.color !== 'green');
   if (w.length < 8) return { vote:'pass', str:0, label:'FREQ', reliability:0 };
   let r = w.filter(s => s.color === 'red').length;
   let n = w.length, p = 18/38, expected = n*p, sd = Math.sqrt(n*p*(1-p));
@@ -93,8 +93,8 @@ function sigFreq(h) {
 // ===== SIGNAL: FLOW (N-2 Markov Chain — Recent 20 Only) =====
 function sigFlow(h) {
   if (h.length < 12) return { vote:'pass', str:0, label:'FLOW' };
-  // Only look at last 20 spins — stale transitions poison predictions
-  let valid = h.slice(0, 20).filter(s => s.color !== 'green');
+  // Use ALL available history (up to 200) — more data = more stable Markov transitions
+  let valid = h.slice(0, 200).filter(s => s.color !== 'green');
   if (valid.length < 8) return { vote:'pass', str:0, label:'FLOW' };
   let c0 = valid[0].color, c1 = valid[1].color;
   let trans = { red:0, black:0 }, total = 0;
@@ -121,8 +121,8 @@ function sigFlow(h) {
 // ===== SIGNAL: HOT (Number frequency spikes — capped strength) =====
 function sigHot(h) {
   if (h.length < 15) return { vote:'pass', str:0, label:'HOT', reliability:0 };
-  // Tight 15-spin window — stale prime data was poisoning this
-  let w = h.slice(0, 15), freq = {};
+  // Use full history for frequency detection
+  let w = h.slice(0, 100), freq = {};
   w.forEach(s => { freq[s.num] = (freq[s.num]||0)+1; });
   let expected = w.length / 38;
   let hotNums = [];
@@ -141,7 +141,7 @@ function sigHot(h) {
 
 // ===== SIGNAL: ACCEL (Delta acceleration — second derivative) =====
 function sigAccel(h) {
-  let d = getD(h, 12);
+  let d = getD(h, 50);
   if (d.length < 6) return { vote:'pass', str:0, label:'ACCEL', reliability:0 };
   let accel = [];
   for (let i=0; i<d.length-1; i++) accel.push(d[i] - d[i+1]);
@@ -162,7 +162,7 @@ function sigAccel(h) {
 
 // ===== META-SIGNAL: ENTROPY (pattern density modifier) =====
 function getEntropy(h) {
-  let valid = h.slice(0,12).filter(s => s.color !== 'green');
+  let valid = h.slice(0,50).filter(s => s.color !== 'green');
   if (valid.length < 10) return 1;
   let bigrams = {RR:0, RB:0, BR:0, BB:0};
   for (let i=0; i<valid.length-1; i++) {

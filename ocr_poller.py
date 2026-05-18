@@ -12,9 +12,48 @@ import subprocess
 import time
 import os
 import re
+import sys
+import signal
+import atexit
 from datetime import datetime
 from PIL import Image
 import io
+
+# ─── PID Lock — prevent duplicate pollers ───
+PID_FILE = '.tmp/ocr.pid'
+
+def check_pid_lock():
+    """Exit immediately if another poller is already running."""
+    if os.path.exists(PID_FILE):
+        try:
+            old_pid = int(open(PID_FILE).read().strip())
+            # Check if that process is actually alive
+            os.kill(old_pid, 0)
+            print(f'[OCR] Another poller is already running (PID {old_pid}). Exiting.')
+            sys.exit(0)
+        except (ProcessLookupError, ValueError):
+            # Old process is dead, clean up stale PID file
+            os.remove(PID_FILE)
+        except PermissionError:
+            # Process exists but we can't signal it — it's alive
+            print(f'[OCR] Another poller is already running. Exiting.')
+            sys.exit(0)
+    
+    os.makedirs('.tmp', exist_ok=True)
+    with open(PID_FILE, 'w') as f:
+        f.write(str(os.getpid()))
+
+def cleanup_pid():
+    try:
+        if os.path.exists(PID_FILE):
+            os.remove(PID_FILE)
+    except:
+        pass
+
+atexit.register(cleanup_pid)
+signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0))
+
+check_pid_lock()
 
 # ─── Config ───
 POLL_INTERVAL = 10  # seconds
@@ -71,7 +110,9 @@ def capture_and_crop():
     script = f'''
 import base64
 tabs = cdp("Target.getTargets")
-fd = [t for t in tabs["targetInfos"] if t.get("type") == "page" and ("fanduel" in t.get("url","").lower() or "launcher.casino" in t.get("url","").lower())]
+fd = [t for t in tabs["targetInfos"] if t.get("type") == "page" and "launcher.casino" in t.get("url","").lower()]
+if not fd:
+    fd = [t for t in tabs["targetInfos"] if t.get("type") == "page" and "fanduel" in t.get("url","").lower()]
 if fd:
     tid = fd[0]["targetId"]
     sid = cdp("Target.attachToTarget", targetId=tid, flatten=True)["sessionId"]
