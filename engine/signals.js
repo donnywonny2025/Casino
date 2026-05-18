@@ -114,8 +114,8 @@ function sigFlow(h) {
   let bias = Math.abs(rPct - bPct);
   if (bias < 0.10) return { vote:'pass', str:0, label:'FLOW' };
   let rel = getReliability('FLOW');
-  // FLOW is our strongest signal — raise cap to let it drive predictions
-  return { vote: rPct > bPct ? 'red' : 'black', str: Math.min(bias*2.5, 0.8), label:'FLOW', reliability:rel };
+  // FLOW capped at 0.6 — balanced: strong enough to vote meaningfully, not so high it dominates alone
+  return { vote: rPct > bPct ? 'red' : 'black', str: Math.min(bias*2.5, 0.6), label:'FLOW', reliability:rel };
 }
 
 // ===== SIGNAL: HOT (Number frequency spikes — capped strength) =====
@@ -156,7 +156,8 @@ function sigAccel(h) {
   let projColor = getC(projNum);
   if (projColor === 'green') return { vote:'pass', str:0, label:'ACCEL', reliability:0 };
   let rel = getReliability('ACCEL');
-  return { vote:projColor, str:Math.min(Math.abs(avgA)/3, 0.8), label:'ACCEL', reliability:rel||0.3, target:projNum };
+  // ACCEL capped at 0.5 — prevent single-signal dominance
+  return { vote:projColor, str:Math.min(Math.abs(avgA)/3, 0.5), label:'ACCEL', reliability:rel||0.3, target:projNum };
 }
 
 // ===== META-SIGNAL: ENTROPY (pattern density modifier) =====

@@ -7,8 +7,15 @@ function getMomentum() {
   if (recent.length < 5) return 'neutral';
   let w = recent.filter(o => o.result === 'WIN').length;
   let rate = w / recent.length;
+  // Check for consecutive losses (4+ in a row = cold regardless of overall rate)
+  let consLosses = 0;
+  for (let i = recent.length - 1; i >= 0; i--) {
+    if (recent[i].result === 'LOSS') consLosses++;
+    else break;
+  }
+  if (consLosses >= 4) return 'cold';
   if (rate > 0.65) return 'hot';
-  if (rate < 0.35) return 'cold';
+  if (rate < 0.40) return 'cold';  // Was 0.35 — too lenient, engine bled 6 losses before locking
   return 'neutral';
 }
 
@@ -162,6 +169,13 @@ function predict() {
   let conf = Math.round(Math.max(pRed, pBlack) * 100);
   conf = Math.min(conf, 95);
   if (dealerChanged && softReset > 4) conf = Math.min(conf, 55);
+
+  // === NO-EDGE GATE: Don't bet on coin flips ===
+  // Block calls below 54% — those hit at 37% historically and bleed money
+  // Single strong signal is fine if it produces real confidence
+  if (conf < 54) {
+    return pred = { color:'pass', conf:0, reason:`No edge (${conf}% raw, need 54%+)`, signals, dp, targets:[], bet:{size:0,label:'SIT'}, momentum, votingSignals };
+  }
 
   // Kelly bet sizing
   let bet = kellyBet(Math.max(pRed, pBlack), dp.sd);

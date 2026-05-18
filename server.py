@@ -243,6 +243,20 @@ class EdgeHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"running": running, "pid": pid}).encode())
             return
 
+        if self.path == '/api/config':
+            api_key = ''
+            if os.path.exists('.env'):
+                with open('.env') as f:
+                    for line in f:
+                        if line.startswith('GEMINI_API_KEY='):
+                            api_key = line.strip().split('=', 1)[1]
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"geminiKey": api_key}).encode())
+            return
+
         if self.path == '/api/ocr-latest':
             try:
                 with open('.tmp/ocr_latest.json') as f:

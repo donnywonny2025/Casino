@@ -9,12 +9,30 @@ const GEMINI_CONFIG = {
   endpoint: 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent',
   callEveryN: 10,        // Analyze every 10 spins — background task
   maxHistoryTokens: 50,
-  enabled: true,
-  apiKey: 'AIzaSyDuJ5kKIL1KJO1U6Ov1UnOjzSACALEvlQc'
+  enabled: false,  // Starts disabled, enabled once key loads from server
+  apiKey: ''       // NEVER hardcode — loaded from /api/config (reads .env)
 };
 
 let geminiLastCall = 0;
 let geminiInsight = null;
+
+// Auto-load API key from server (.env) on boot
+(async function loadGeminiKey() {
+  try {
+    const res = await fetch('/api/config');
+    const cfg = await res.json();
+    if (cfg.geminiKey) {
+      GEMINI_CONFIG.apiKey = cfg.geminiKey;
+      GEMINI_CONFIG.enabled = true;
+      console.log('[Gemini] API key loaded from server');
+      updateGeminiUI();
+    } else {
+      console.warn('[Gemini] No API key in .env');
+    }
+  } catch(e) {
+    console.warn('[Gemini] Could not load config:', e.message);
+  }
+})();
 
 // ===== PUBLIC API =====
 
